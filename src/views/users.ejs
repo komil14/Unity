@@ -4,101 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unity Admin | Users</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #007bff; color: white; }
-        tr:hover { background-color: #f1f1f1; }
-        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-        .btn-update { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-        .btn-update:hover { background-color: #218838; }
-        .nav { margin-bottom: 20px; }
-        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
 </head>
 <body>
 
-<div class="container">
-    <div class="nav">
-        <a href="/admin">Dashboard</a>
-        <a href="/admin/logout" style="color: red; float: right;">Logout</a>
+    <!-- Sidebar (Same as Home) -->
+    <div class="sidebar">
+        <div class="brand">UNITY ADMIN</div>
+        <div class="menu">
+            <a href="/admin"><i class="fas fa-fw fa-tachometer-alt"></i> Dashboard</a>
+            <a href="/admin/users" class="active"><i class="fas fa-fw fa-users"></i> Users</a>
+            <a href="/admin/events"><i class="fas fa-fw fa-calendar"></i> Events</a>
+            <a href="/admin/boards"><i class="fas fa-fw fa-newspaper"></i> Articles</a>
+            <a href="/admin/comments"><i class="fas fa-fw fa-comments"></i> Comments</a>
+        </div>
+        <div class="menu" style="flex: 0; padding-bottom: 20px;">
+            <a href="/admin/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Logout</a>
+        </div>
     </div>
 
-    <h2>User Management</h2>
+    <div class="main">
+        <div class="header">
+            <div class="title"><h2>User Management</h2></div>
+            <div class="user-info">Hi, <%= user.memberNick %></div>
+        </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Nickname</th>
-                <th>Phone</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% users.map(function(user, index) { %>
-                <tr>
-                    <td><%= index + 1 %></td>
-                    <td><%= user.memberNick %></td>
-                    <td><%= user.memberPhone %></td>
-                    <td>
-                        <% if (user.memberType === 'ORG') { %>
-                            <span style="font-weight: bold; color: #d63384;">
-                                <%= user.memberType %>
-                            </span>
-                        <% } else { %>
-                            <span style="font-weight: bold; color: #007bff;">
-                                <%= user.memberType %>
-                            </span>
-                        <% } %>
-                    </td>
-                    <td>
-                        <select id="status-<%= user._id %>">
-                            <option value="ACTIVE" <%= user.memberStatus === 'ACTIVE' ? 'selected' : '' %>>ACTIVE</option>
-                            <option value="PENDING" <%= user.memberStatus === 'PENDING' ? 'selected' : '' %>>PENDING</option>
-                            <option value="BLOCK" <%= user.memberStatus === 'BLOCK' ? 'selected' : '' %>>BLOCK</option>
-                            <option value="DELETE" <%= user.memberStatus === 'DELETE' ? 'selected' : '' %>>DELETE</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button class="btn-update" onclick="updateMember('<%= user._id %>')">Save</button>
-                    </td>
-                </tr>
-            <% }) %>
-        </tbody>
-    </table>
-</div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Image</th>
+                        <th>Nickname</th>
+                        <th>Phone</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% users.map(function(member, index) { %>
+                        <tr>
+                            <td><%= index + 1 %></td>
+                            <td>
+                                <img src="<%= member.memberImage ? '/uploads/members/' + member.memberImage : '/img/default-user.svg' %>" class="table-img" onerror="this.src='/img/default-user.svg'">
+                            </td>
+                            <td><%= member.memberNick %></td>
+                            <td><%= member.memberPhone %></td>
+                            <td>
+                                <!-- Distinct color for ORG vs USER -->
+                                <span class="badge <%= member.memberType %>">
+                                    <%= member.memberType %>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge <%= member.memberStatus %>"><%= member.memberStatus %></span>
+                            </td>
+                            <td>
+                                <select id="status-<%= member._id %>" onchange="updateStatus('user/edit', '<%= member._id %>', 'status-<%= member._id %>')">
+                                    <option value="ACTIVE" <%= member.memberStatus === 'ACTIVE' ? 'selected' : '' %>>ACTIVE</option>
+                                    <option value="PENDING" <%= member.memberStatus === 'PENDING' ? 'selected' : '' %>>PENDING</option>
+                                    <option value="BLOCK" <%= member.memberStatus === 'BLOCK' ? 'selected' : '' %>>BLOCK</option>
+                                    <option value="DELETE" <%= member.memberStatus === 'DELETE' ? 'selected' : '' %>>DELETE</option>
+                                </select>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
-<script>
-    async function updateMember(id) {
-        const selectBox = document.getElementById(`status-${id}`);
-        const newStatus = selectBox.value;
-
-        try {
-            // Call the API we created in AdminController
-            const response = await axios.post('/admin/user/edit', {
-                _id: id,
-                memberStatus: newStatus
-            });
-            
-            if(response.data.state === 'success') {
-                alert('User status updated successfully!');
-                location.reload(); // Refresh to see changes
-            } else {
-                alert(response.data.message || 'Update failed');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Failed to connect to server');
-        }
-    }
-</script>
-
+    <script src="/js/main.js"></script>
 </body>
 </html>

@@ -3,7 +3,8 @@ import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 
 /**
- * Root location for all uploads
+ * Configure Multer Storage
+ * @param folderName - The subfolder inside 'uploads' (e.g., 'events', 'members')
  */
 function getTargetImageStorage(folderName: string) {
   return multer.diskStorage({
@@ -22,8 +23,8 @@ function getTargetImageStorage(folderName: string) {
 }
 
 /**
- * Creates a configured Multer instance for a specific folder
- * @param address - The folder name inside /uploads (e.g., "members", "events")
+ * Factory function to create a configured uploader middleware
+ * Usage: makeUploader("events").single("eventImage")
  */
 const makeUploader = (address: string) => {
   const storage = getTargetImageStorage(address);

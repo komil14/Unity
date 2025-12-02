@@ -22,6 +22,7 @@ export interface Event {
 
 // 2. Input DTO
 export interface EventInput {
+    [x: string]: unknown;
     eventTitle: string;
     eventDesc: string;
     eventLocation: string;

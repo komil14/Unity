@@ -22,15 +22,15 @@ class EventService {
    */
   public async createEvent(input: EventInput): Promise<Event> {
     const exist = await this.eventModel
-      .findOne({ 
-        memberId: input.memberId, 
-        eventTitle: input.eventTitle, 
-        eventDate: input.eventDate 
+      .findOne({
+        memberId: input.memberId,
+        eventTitle: input.eventTitle,
+        eventDate: input.eventDate,
       })
       .exec();
 
     if (exist) {
-        throw new Errors(HttpCode.CONFLICT, Message.CREATE_FAILED); 
+      throw new Errors(HttpCode.CONFLICT, Message.CREATE_FAILED);
     }
 
     try {
@@ -45,35 +45,40 @@ class EventService {
   /**
    * Get Single Event (With View Counting)
    */
-  public async getEvent(memberId: Types.ObjectId | null, id: string): Promise<Event> {
+  public async getEvent(
+    memberId: Types.ObjectId | null,
+    id: string
+  ): Promise<Event> {
     const event = await this.eventModel.findById(id).exec();
 
     if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     if (event.eventStatus === EventStatus.DELETE) {
-        throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     }
 
     // VIEW COUNTING LOGIC
-    if (memberId) { 
-        const viewInput: ViewInput = { 
-            memberId: memberId, 
-            viewRefId: event._id, 
-            viewGroup: ViewGroup.EVENT 
-        };
-        
-        const newView = await this.viewService.insertMemberView(viewInput);
-        
-        if (newView) {
-            await this.eventModel.findByIdAndUpdate(id, { $inc: { eventViews: 1 } }).exec();
-            event.eventViews++;
-        }
+    if (memberId) {
+      const viewInput: ViewInput = {
+        memberId: memberId,
+        viewRefId: event._id,
+        viewGroup: ViewGroup.EVENT,
+      };
+
+      const newView = await this.viewService.insertMemberView(viewInput);
+
+      if (newView) {
+        await this.eventModel
+          .findByIdAndUpdate(id, { $inc: { eventViews: 1 } })
+          .exec();
+        event.eventViews++;
+      }
     }
 
     return event.toJSON() as unknown as Event;
   }
 
   /**
-   * Get All Events
+   * Get All Events (Feed)
    */
   public async getEvents(inquiry: EventInquiry): Promise<Event[]> {
     const match: T = { eventStatus: EventStatus.ACTIVE };
@@ -109,6 +114,54 @@ class EventService {
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
     return result as unknown as Event[];
+  }
+
+  /**
+   * BSSR: Get All Events (For Admin)
+   */
+  public async getAllEventsAdmin(): Promise<Event[]> {
+    const result = await this.eventModel
+      .aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        { $unwind: "$memberData" },
+      ])
+      .exec();
+
+    return result as unknown as Event[];
+  }
+
+  /**
+   * BSSR: Update Event Status
+   */
+  public async updateEventStatus(input: EventInput): Promise<Event> {
+    const eventId = input._id;
+    const result = await this.eventModel
+      .findByIdAndUpdate(
+        eventId,
+        { eventStatus: input.eventStatus }, // Fixed: lowercase eventStatus
+        { new: true }
+      )
+      .exec();
+
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    return result.toJSON() as unknown as Event;
+  }
+
+  /**
+   * BSSR: Count Events (For Admin Dashboard)
+   * This was missing in your snippet!
+   */
+  public async countEvents(): Promise<number> {
+    return await this.eventModel.countDocuments();
   }
 }
 

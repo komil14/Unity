@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Unity Admin | Events</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand">UNITY ADMIN</div>
+        <div class="menu">
+            <a href="/admin"><i class="fas fa-fw fa-tachometer-alt"></i> Dashboard</a>
+            <a href="/admin/users"><i class="fas fa-fw fa-users"></i> Users</a>
+            <a href="/admin/events" class="active"><i class="fas fa-fw fa-calendar"></i> Events</a>
+            <a href="/admin/boards"><i class="fas fa-fw fa-newspaper"></i> Articles</a>
+            <a href="/admin/comments"><i class="fas fa-fw fa-comments"></i> Comments</a>
+        </div>
+        <div class="menu" style="flex: 0; padding-bottom: 20px;">
+            <a href="/admin/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div class="title"><h2>Event Management</h2></div>
+            <div class="user-info">Hi, <%= user.memberNick %></div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Banner</th>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Organizer</th>
+                        <th>Participants</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% events.map(function(event, index) { %>
+                        <tr>
+                            <td><%= index + 1 %></td>
+                            <td>
+                                <img src="<%= event.eventImages[0] ? '/uploads/events/' + event.eventImages[0] : '/img/default-event.jpg' %>" class="table-img" style="border-radius: 4px; width: 60px;">
+                            </td>
+                            <td><%= event.eventTitle %></td>
+                            <td><%= new Date(event.eventDate).toLocaleDateString() %></td>
+                            <td><%= event.memberData.memberNick %></td>
+                            <td><%= event.eventJoined %> / <%= event.eventCapacity %></td>
+                            <td>
+                                <select id="status-<%= event._id %>" onchange="updateStatus('event/edit', '<%= event._id %>', 'status-<%= event._id %>')">
+                                    <option value="ACTIVE" <%= event.eventStatus === 'ACTIVE' ? 'selected' : '' %>>ACTIVE</option>
+                                    <option value="DELETE" <%= event.eventStatus === 'DELETE' ? 'selected' : '' %>>DELETE</option>
+                                </select>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

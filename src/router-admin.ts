@@ -3,19 +3,16 @@ import adminController from "./controllers/admin.controller";
 
 const routerAdmin = express.Router();
 
-// Dashboard
+// Dashboard & Auth
 routerAdmin.get("/", adminController.goHome);
-
-// Authentication
 routerAdmin.get("/login", adminController.getLogin);
-routerAdmin.post("/login", adminController.processLogin); // Now connects to session logic
-
+routerAdmin.post("/login", adminController.processLogin);
 routerAdmin.get("/signup", adminController.getSignup);
 routerAdmin.post("/signup", adminController.processSignup);
-
+routerAdmin.get("/logout", adminController.logout);
 routerAdmin.get("/check-me", adminController.checkAuthSession);
 
-/** User Management */
+// Users
 routerAdmin.get(
   "/users",
   adminController.verifyAdmin,
@@ -27,5 +24,40 @@ routerAdmin.post(
   adminController.updateMember
 );
 
-routerAdmin.get("/logout", adminController.logout);
+// Events
+routerAdmin.get(
+  "/events",
+  adminController.verifyAdmin,
+  adminController.getAllEvents
+);
+routerAdmin.post(
+  "/event/edit",
+  adminController.verifyAdmin,
+  adminController.updateEvent
+);
+
+// Boards
+routerAdmin.get(
+  "/boards",
+  adminController.verifyAdmin,
+  adminController.getAllBoards
+);
+routerAdmin.post(
+  "/board/edit",
+  adminController.verifyAdmin,
+  adminController.updateBoard
+);
+
+// Comments
+routerAdmin.get(
+  "/comments",
+  adminController.verifyAdmin,
+  adminController.getAllComments
+);
+routerAdmin.post(
+  "/comment/edit",
+  adminController.verifyAdmin,
+  adminController.updateComment
+);
+
 export default routerAdmin;

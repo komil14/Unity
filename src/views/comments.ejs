@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Unity Admin | Comments</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand">UNITY ADMIN</div>
+        <div class="menu">
+            <a href="/admin"><i class="fas fa-fw fa-tachometer-alt"></i> Dashboard</a>
+            <a href="/admin/users"><i class="fas fa-fw fa-users"></i> Users</a>
+            <a href="/admin/events"><i class="fas fa-fw fa-calendar"></i> Events</a>
+            <a href="/admin/boards"><i class="fas fa-fw fa-newspaper"></i> Articles</a>
+            <a href="/admin/comments" class="active"><i class="fas fa-fw fa-comments"></i> Comments</a>
+        </div>
+        <div class="menu" style="flex: 0; padding-bottom: 20px;">
+            <a href="/admin/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div class="title"><h2>Recent Comments</h2></div>
+            <div class="user-info">Hi, <%= user.memberNick %></div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Content</th>
+                        <th>Author</th>
+                        <th>Article ID</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% comments.map(function(comment, index) { %>
+                        <tr>
+                            <td><%= index + 1 %></td>
+                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= comment.commentContent %></td>
+                            <td><%= comment.memberData.memberNick %></td>
+                            <td>
+                                <a href="/board/detail/<%= comment.articleId %>" target="_blank" style="color: var(--primary);">View Article</a>
+                            </td>
+                            <td>
+                                <select id="status-<%= comment._id %>" onchange="updateStatus('comment/edit', '<%= comment._id %>', 'status-<%= comment._id %>')">
+                                    <option value="ACTIVE" <%= comment.commentStatus === 'ACTIVE' ? 'selected' : '' %>>ACTIVE</option>
+                                    <option value="DELETE" <%= comment.commentStatus === 'DELETE' ? 'selected' : '' %>>DELETE</option>
+                                </select>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

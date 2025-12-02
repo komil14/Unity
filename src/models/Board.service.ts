@@ -17,9 +17,6 @@ class BoardService {
     this.viewService = new ViewService();
   }
 
-  /**
-   * Create Article
-   */
   public async createBoard(input: BoardInput): Promise<Board> {
     try {
       const result = await this.boardModel.create(input);
@@ -30,9 +27,6 @@ class BoardService {
     }
   }
 
-  /**
-   * Get Single Article (With View Counting)
-   */
   public async getBoard(memberId: Types.ObjectId | null, id: string): Promise<Board> {
     const board = await this.boardModel.findById(id).exec();
     
@@ -41,16 +35,13 @@ class BoardService {
         throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     }
     
-    // VIEW COUNTING LOGIC
     if (memberId) {
         const viewInput: ViewInput = { 
             memberId: memberId, 
             viewRefId: board._id, 
             viewGroup: ViewGroup.ARTICLE 
         };
-        
         const newView = await this.viewService.insertMemberView(viewInput);
-        
         if (newView) {
             await this.boardModel.findByIdAndUpdate(id, { $inc: { boardViews: 1 } }).exec();
             board.boardViews++;
@@ -60,9 +51,6 @@ class BoardService {
     return board.toJSON() as unknown as Board;
   }
 
-  /**
-   * Get All Articles (Feed)
-   */
   public async getBoards(inquiry: BoardInquiry): Promise<Board[]> {
     const match: T = { boardStatus: BoardStatus.ACTIVE };
 
@@ -97,6 +85,42 @@ class BoardService {
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
     return result as unknown as Board[];
+  }
+
+  /** BSSR: Get All Boards (For Admin) */
+  public async getAllBoardsAdmin(): Promise<Board[]> {
+    const result = await this.boardModel
+      .aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        { $unwind: "$memberData" },
+      ])
+      .exec();
+
+    return result as unknown as Board[];
+  }
+
+  /** BSSR: Update Board Status */
+  public async updateBoardStatus(input: BoardInput): Promise<Board> {
+    const boardId = input._id;
+    const result = await this.boardModel
+      .findByIdAndUpdate(boardId, { boardStatus: input.boardStatus }, { new: true })
+      .exec();
+
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    return result.toJSON() as unknown as Board;
+  }
+
+  public async countBoards(): Promise<number> {
+    return await this.boardModel.countDocuments();
   }
 }
 

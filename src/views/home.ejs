@@ -3,9 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unity</title>
+    <title>Unity Admin | Dashboard</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <h1>Welcome to Unity Home Page</h1>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand">UNITY ADMIN</div>
+        <div class="menu">
+            <a href="/admin" class="active"><i class="fas fa-fw fa-tachometer-alt"></i> Dashboard</a>
+            <a href="/admin/users"><i class="fas fa-fw fa-users"></i> Users</a>
+            <a href="/admin/events"><i class="fas fa-fw fa-calendar"></i> Events</a>
+            <a href="/admin/boards"><i class="fas fa-fw fa-newspaper"></i> Articles</a>
+            <a href="/admin/comments"><i class="fas fa-fw fa-comments"></i> Comments</a>
+        </div>
+        <div class="menu" style="flex: 0; padding-bottom: 20px;">
+            <a href="/admin/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <div class="header">
+            <div class="title">
+                <h2>Dashboard</h2>
+            </div>
+            <div class="user-info">
+                Hi, <%= user.memberNick %>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <!-- Members Card -->
+            <div class="card" style="border-left-color: var(--primary);">
+                <h6>Total Members</h6>
+                <h3><%= stats.members.total %></h3>
+            </div>
+
+            <!-- Events Card -->
+            <div class="card" style="border-left-color: var(--success);">
+                <h6>Total Events</h6>
+                <h3><%= stats.events %></h3>
+            </div>
+
+            <!-- Articles Card -->
+            <div class="card" style="border-left-color: var(--warning);">
+                <h6>Community Articles</h6>
+                <h3><%= stats.boards %></h3>
+            </div>
+
+            <!-- Blocked Card -->
+            <div class="card" style="border-left-color: var(--danger);">
+                <h6>Blocked Users</h6>
+                <h3><%= stats.members.blocked %></h3>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

@@ -17,6 +17,8 @@ export interface Board {
 
 // 2. Input DTO
 export interface BoardInput {
+    _id: any;
+    boardStatus: unknown;
     boardTitle: string;
     boardContent: string;
     boardImage?: string;

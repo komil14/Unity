@@ -3,29 +3,26 @@ import path from 'path';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import ConnectMongoDBSession from 'connect-mongodb-session';
+import ConnectMongoDB from 'connect-mongodb-session';
 import routerAdmin from './router-admin';
 import router from './router';
+import { T } from "./libs/types/common"; // Import T
 
-const MongoDBStore = ConnectMongoDBSession(session);
+const MongoDBStore = ConnectMongoDB(session);
 
 const app = express();
 
-// 1. MIDDLEWARE (MUST BE AT THE TOP)
+/** 1. MIDDLEWARE **/
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.urlencoded({ extended: true })); // <--- FIXES req.body for Forms
-app.use(express.json());                         // <--- FIXES req.body for JSON
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 app.use(cookieParser());
 
-// 2. SESSIONS
+/** 2. SESSIONS **/
 const store = new MongoDBStore({
     uri: process.env.MONGO_URL as string,
     collection: 'sessions'
-});
-
-store.on('error', (error) => {
-    console.error('MongoDB session store error:', error);
 });
 
 app.use(
@@ -33,20 +30,27 @@ app.use(
         secret: process.env.SESSION_SECRET || 'This is a secret',
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-            httpOnly: true,
-            secure: false
+            httpOnly: true
         },
         store: store,
-        resave: false,
-        saveUninitialized: false
+        resave: true,
+        saveUninitialized: true
     })
 );
 
-// 3. VIEWS
+/** 3. GLOBAL VARIABLES (Your Code) **/
+// This middleware runs on EVERY request
+app.use(function (req, res, next) {
+  const sessionInstance = req.session as T; // Type assertion
+  res.locals.member = sessionInstance.member; // Now available in all EJS files
+  next();
+});
+
+/** 4. VIEWS **/
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-// 4. ROUTERS
+/** 5. ROUTERS **/
 app.use('/admin', routerAdmin);
 app.use('/api', router);
 
