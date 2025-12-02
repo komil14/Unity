@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Unity User Management</title>
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .status-select { padding: 5px; }
+    </style>
+</head>
+<body style="padding: 20px; font-family: Arial;">
+
+    <h1>User Management</h1>
+    <a href="/admin">Back to Dashboard</a>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Nick</th>
+                <th>Phone</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% users.map(function(user, index) { %>
+                <tr>
+                    <td><%= index + 1 %></td>
+                    <td><%= user.memberNick %></td>
+                    <td><%= user.memberPhone %></td>
+                    <td><%= user.memberType %></td>
+                    <td>
+                        <select class="status-select" id="<%= user._id %>">
+                            <option value="ACTIVE" <%= user.memberStatus === 'ACTIVE' ? 'selected' : '' %>>ACTIVE</option>
+                            <option value="PENDING" <%= user.memberStatus === 'PENDING' ? 'selected' : '' %>>PENDING</option>
+                            <option value="BLOCK" <%= user.memberStatus === 'BLOCK' ? 'selected' : '' %>>BLOCK</option>
+                            <option value="DELETE" <%= user.memberStatus === 'DELETE' ? 'selected' : '' %>>DELETE</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button onclick="updateMember('<%= user._id %>')">Update</button>
+                    </td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
+    <script>
+        async function updateMember(id) {
+            const select = document.getElementById(id);
+            const status = select.value;
+
+            try {
+                const response = await axios.post('/admin/user/edit', {
+                    _id: id,
+                    memberStatus: status
+                });
+                
+                if(response.data.state === 'success') {
+                    alert('Status Updated!');
+                } else {
+                    alert(response.data.message);
+                }
+            } catch (err) {
+                console.log(err);
+                alert('Update Failed');
+            }
+        }
+    </script>
+
+</body>
+</html>

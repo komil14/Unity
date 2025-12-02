@@ -23,6 +23,7 @@ export interface Member {
 
 // 2. Input DTOs
 export interface MemberInput {
+    [x: string]: any;
     memberType: MemberType;
     memberStatus?: MemberStatus;
     memberNick: string;

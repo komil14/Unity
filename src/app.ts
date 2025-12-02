@@ -1,12 +1,13 @@
-import cors from 'cors';
 import express from 'express';
 import path from 'path';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import ConnectMongoDB from 'connect-mongodb-session';
+import ConnectMongoDBSession from 'connect-mongodb-session';
 import routerAdmin from './router-admin';
-const MongoDBStore = ConnectMongoDB(session);
+import router from './router';
+
+const MongoDBStore = ConnectMongoDBSession(session);
 
 const app = express();
 
@@ -14,7 +15,6 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true })); // <--- FIXES req.body for Forms
 app.use(express.json());                         // <--- FIXES req.body for JSON
-app.use(cors({ origin: true, credentials: true }));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 app.use(cookieParser());
 
@@ -24,16 +24,21 @@ const store = new MongoDBStore({
     collection: 'sessions'
 });
 
+store.on('error', (error) => {
+    console.error('MongoDB session store error:', error);
+});
+
 app.use(
     session({
         secret: process.env.SESSION_SECRET || 'This is a secret',
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-            httpOnly: true
+            httpOnly: true,
+            secure: false
         },
         store: store,
-        resave: true,
-        saveUninitialized: true
+        resave: false,
+        saveUninitialized: false
     })
 );
 
@@ -43,6 +48,6 @@ app.set('view engine', 'ejs');
 
 // 4. ROUTERS
 app.use('/admin', routerAdmin);
-// app.use('/api', router);
+app.use('/api', router);
 
 export default app;
