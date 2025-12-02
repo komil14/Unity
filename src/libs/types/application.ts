@@ -1,12 +1,12 @@
-import { ObjectId } from "mongoose";
+import { Types } from "mongoose";
 import { ApplicationStatus } from "../enums/application.enum";
 
 // 1. DB Document Interface
 export interface Application {
-    _id: ObjectId;
+    _id: Types.ObjectId;  // <--- Changed from ObjectId to Types.ObjectId
     applicationStatus: ApplicationStatus;
-    eventId: ObjectId;
-    memberId: ObjectId; // Volunteer
+    eventId: Types.ObjectId;
+    memberId: Types.ObjectId;
     applicationNote?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -14,7 +14,7 @@ export interface Application {
 
 // 2. Input DTO
 export interface ApplicationInput {
-    eventId: ObjectId;
-    memberId?: ObjectId;
+    eventId: Types.ObjectId;
+    memberId?: Types.ObjectId; // <--- This fixes your error
     applicationNote?: string;
 }

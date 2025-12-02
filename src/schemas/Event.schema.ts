@@ -68,5 +68,5 @@ const eventSchema = new Schema({
 }, { 
     timestamps: true,
 });
-
+eventSchema.index({ memberId: 1, eventTitle: 1, eventDate: 1 }, { unique: true });
 export default mongoose.model('Event', eventSchema);

@@ -1,9 +1,9 @@
-import { ObjectId } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 import { EventStatus } from "../enums/event.enum";
 
 // 1. DB Document Interface
 export interface Event {
-    _id: ObjectId;
+    _id: Types.ObjectId;
     eventStatus: EventStatus;
     eventTitle: string;
     eventDesc: string;
@@ -29,4 +29,12 @@ export interface EventInput {
     eventCapacity: number;
     eventImages?: string[];
     memberId?: ObjectId; // Usually injected by the server from the token
+}
+
+export interface EventInquiry {
+    page: number;
+    limit: number;
+    order?: string;      // 'createdAt' | 'eventDate' | 'eventViews'
+    search?: string;     // For search bar
+    memberId?: ObjectId; // To filter events by a specific Organization
 }

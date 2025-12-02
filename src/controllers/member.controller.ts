@@ -5,6 +5,7 @@ import AuthService from "../models/Auth.service"; // Import the new Service
 import { MemberInput, LoginInput } from "../libs/types/member";
 import { MemberType } from "../libs/enums/member.enum";
 import { AUTH_TIMER } from "../libs/config";
+import { AdminRequest } from "../libs/types/member";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 
 // Instantiate Services
@@ -68,6 +69,56 @@ memberController.login = async (req: Request, res: Response) => {
       res.status(err.code).json({ message: err.message });
     else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
   }
+};
+
+/**
+ * MIDDLEWARE: Verify JWT Token
+ * usage: router.post("/event/create", memberController.verifyAuth, ...)
+ */
+memberController.verifyAuth = async (req: AdminRequest, res: Response, next: Function) => {
+  try {
+    const token = req.cookies["accessToken"];
+    
+    console.log("VerifyAuth Token:", token); // Debugging
+
+    if (!token) {
+        throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    }
+
+    // 1. Verify Token using AuthService
+    const member = await authService.checkAuth(token);
+    
+    if (!member) {
+        throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    }
+
+    // 2. Inject Member into Request (so EventController can see who it is)
+    req.member = member;
+    
+    next(); // Proceed to the next controller (createEvent)
+
+  } catch (err: any) {
+    console.log("Error, verifyAuth:", err);
+    if (err instanceof Errors) res.status(err.code).json({ message: err.message });
+    else res.status(HttpCode.UNAUTHORIZED).json({ message: Message.NOT_AUTHENTICATED });
+  }
+};
+
+/**
+ * MIDDLEWARE: Retrieve Auth (Optional)
+ * If logged in, injects req.member. If not, proceeds anyway (req.member = null).
+ * Usage: For things like "Get Event Detail" where we want to know if the user liked it, but guests can still view it.
+ */
+memberController.retrieveAuth = async (req: AdminRequest, res: Response, next: Function) => {
+  try {
+    const token = req.cookies["accessToken"];
+    if (token) {
+        req.member = await authService.checkAuth(token);
+    }
+  } catch (err) {
+    console.log("Error, retrieveAuth:", err);
+  }
+  next();
 };
 
 export default memberController;

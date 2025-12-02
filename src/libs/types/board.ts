@@ -1,14 +1,14 @@
-import { ObjectId } from "mongoose";
+import { Types } from "mongoose"; // <--- Use 'Types'
 import { BoardStatus } from "../enums/board.enum";
 
 // 1. DB Document Interface
 export interface Board {
-    _id: ObjectId;
+    _id: Types.ObjectId;
     boardStatus: BoardStatus;
     boardTitle: string;
     boardContent: string;
     boardImage?: string;
-    memberId: ObjectId; // Author
+    memberId: Types.ObjectId;
     boardLikes: number;
     boardViews: number;
     createdAt: Date;
@@ -20,5 +20,13 @@ export interface BoardInput {
     boardTitle: string;
     boardContent: string;
     boardImage?: string;
-    memberId?: ObjectId;
+    memberId?: Types.ObjectId; // <--- Changed to Types.ObjectId
+}
+
+export interface BoardInquiry {
+    page: number;
+    limit: number;
+    order?: string;
+    search?: string;
+    memberId?: Types.ObjectId;
 }

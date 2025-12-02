@@ -124,11 +124,13 @@ adminController.logout = (req: Request, res: Response) => {
 adminController.getUsers = async (req: Request, res: Response) => {
   try {
     const users = await memberService.getUsers();
-    res.status(200).json({ data: users });
+    
+    // RENDER THE VIEW (instead of sending JSON)
+    res.render("users", { users: users });
+    
   } catch (err) {
     console.log("Error: getUsers", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
-    else res.status(Errors.standard.code).json(Errors.standard);
+    res.redirect("/admin");
   }
 };
 
