@@ -1,13 +1,17 @@
-import express from "express";
-import adminController from "./controllers/admin.controller";
+import express from 'express';
+import adminController from './controllers/admin.controller';
 
 const routerAdmin = express.Router();
 
-routerAdmin.get("/", adminController.goHome);
-routerAdmin.get("/signup", adminController.getSignup);
-routerAdmin.post("/signup", adminController.processSignup);
+// Dashboard
+routerAdmin.get('/', adminController.goHome);
 
-routerAdmin.get("/login", adminController.getLogin);
-routerAdmin.post("/login", adminController.processLogin);
+// Authentication
+routerAdmin.get('/login', adminController.getLogin);
+routerAdmin.post('/login', adminController.processLogin); // Now connects to session logic
 
+routerAdmin.get('/signup', adminController.getSignup);
+routerAdmin.post('/signup', adminController.processSignup);
+
+routerAdmin.get('/logout', adminController.logout);
 export default routerAdmin;

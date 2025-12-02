@@ -16,7 +16,8 @@ export enum Message {
     USED_NICK_PHONE = "I am sorry, Nickname or Phone is already used!", // <--- Missing
     WRONG_PASSWORD = "Wrong password, please try again!",               // <--- Missing
     BLOCKED_USER = "You have been blocked by admin!",                   // <--- Missing
-    NOT_ALLOWED = "You are not allowed to access this resource!"        // <--- Missing
+    NOT_ALLOWED = "You are not allowed to access this resource!",        // <--- Missing
+    ADMIN_EXISTS = "ADMIN_EXISTS"
 }
 
 class Errors extends Error {
