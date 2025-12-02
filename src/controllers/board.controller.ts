@@ -8,16 +8,13 @@ import { AdminRequest } from "../libs/types/member";
 const boardService = new BoardService();
 const boardController: T = {};
 
-/**
- * POST /board/create
- * Requires: Auth, Image (Multer)
- */
+/** POST: Create Article */
 boardController.createBoard = async (req: AdminRequest, res: Response) => {
   try {
     console.log("CreateBoard Body:", req.body);
     const input: BoardInput = req.body;
 
-    // Handle Image
+    // Image Handling
     if (req.file) {
         input.boardImage = req.file.path.replace(/\\/g, "/");
     }
@@ -26,7 +23,6 @@ boardController.createBoard = async (req: AdminRequest, res: Response) => {
     input.memberId = req.member._id;
 
     const result = await boardService.createBoard(input);
-
     res.status(201).json(result);
   } catch (err: any) {
     console.log("Error, createBoard:", err);
@@ -35,9 +31,7 @@ boardController.createBoard = async (req: AdminRequest, res: Response) => {
   }
 };
 
-/**
- * GET /board/all
- */
+/** GET: All Articles (Feed) */
 boardController.getBoards = async (req: Request, res: Response) => {
   try {
     const inquiry: BoardInquiry = {
@@ -55,5 +49,20 @@ boardController.getBoards = async (req: Request, res: Response) => {
     else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
   }
 };
+
+/** GET: Single Article Detail (With View Counting) */
+boardController.getBoard = async (req: AdminRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const memberId = req.member?._id ?? null; 
+        
+        const result = await boardService.getBoard(memberId, id);
+        res.status(200).json(result);
+    } catch (err: any) {
+        console.log("Error, getBoard:", err);
+        if (err instanceof Errors) res.status(err.code).json({ message: err.message });
+        else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+    }
+}
 
 export default boardController;

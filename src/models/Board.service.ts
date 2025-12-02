@@ -1,14 +1,20 @@
 import BoardModel from "../schemas/Board.schema";
+import ViewService from "./View.service";
 import { BoardInput, BoardInquiry, Board } from "../libs/types/board";
+import { ViewInput } from "../libs/types/view";
+import { ViewGroup } from "../libs/enums/view.enum";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { BoardStatus } from "../libs/enums/board.enum";
 import { T } from "../libs/types/common";
+import { Types } from "mongoose";
 
 class BoardService {
   private readonly boardModel;
+  private readonly viewService;
 
   constructor() {
     this.boardModel = BoardModel;
+    this.viewService = new ViewService();
   }
 
   /**
@@ -25,13 +31,32 @@ class BoardService {
   }
 
   /**
-   * Get Single Article
-   * (Logic: We will add View Counting here later)
+   * Get Single Article (With View Counting)
    */
-  public async getBoard(id: string): Promise<Board> {
+  public async getBoard(memberId: Types.ObjectId | null, id: string): Promise<Board> {
     const board = await this.boardModel.findById(id).exec();
-    if (!board) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     
+    if (!board) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (board.boardStatus === BoardStatus.DELETE) {
+        throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    }
+    
+    // VIEW COUNTING LOGIC
+    if (memberId) {
+        const viewInput: ViewInput = { 
+            memberId: memberId, 
+            viewRefId: board._id, 
+            viewGroup: ViewGroup.ARTICLE 
+        };
+        
+        const newView = await this.viewService.insertMemberView(viewInput);
+        
+        if (newView) {
+            await this.boardModel.findByIdAndUpdate(id, { $inc: { boardViews: 1 } }).exec();
+            board.boardViews++;
+        }
+    }
+
     return board.toJSON() as unknown as Board;
   }
 
@@ -41,12 +66,10 @@ class BoardService {
   public async getBoards(inquiry: BoardInquiry): Promise<Board[]> {
     const match: T = { boardStatus: BoardStatus.ACTIVE };
 
-    // Search Logic
     if (inquiry.search) {
       match.boardTitle = { $regex: new RegExp(inquiry.search, "i") };
     }
     
-    // Filter by Author
     if (inquiry.memberId) {
         match.memberId = inquiry.memberId;
     }
@@ -59,7 +82,6 @@ class BoardService {
         { $sort: sort },
         { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
         { $limit: inquiry.limit * 1 },
-        // JOIN: Get Author Details
         {
           $lookup: {
             from: "members",
