@@ -2,70 +2,85 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Unity Admin | Events</title>
+    <title>Unity | Events</title>
     <link rel="stylesheet" href="/css/main.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
 </head>
 <body>
-
-    <div class="sidebar">
-        <div class="brand">UNITY ADMIN</div>
+    <nav class="sidebar">
+        <div class="brand"><i class="fa-solid fa-leaf"></i> UNITY</div>
         <div class="menu">
-            <a href="/admin"><i class="fas fa-fw fa-tachometer-alt"></i> Dashboard</a>
-            <a href="/admin/users"><i class="fas fa-fw fa-users"></i> Users</a>
-            <a href="/admin/events" class="active"><i class="fas fa-fw fa-calendar"></i> Events</a>
-            <a href="/admin/boards"><i class="fas fa-fw fa-newspaper"></i> Articles</a>
-            <a href="/admin/comments"><i class="fas fa-fw fa-comments"></i> Comments</a>
+            <div class="menu-label">Main</div>
+            <a href="/admin" class="menu-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+            <div class="menu-label">Management</div>
+            <a href="/admin/users" class="menu-item"><i class="fa-solid fa-users"></i> Users</a>
+            <a href="/admin/events" class="menu-item active"><i class="fa-solid fa-calendar-days"></i> Events</a>
+            <a href="/admin/boards" class="menu-item"><i class="fa-solid fa-newspaper"></i> Articles</a>
+            <a href="/admin/comments" class="menu-item"><i class="fa-solid fa-comments"></i> Comments</a>
         </div>
-        <div class="menu" style="flex: 0; padding-bottom: 20px;">
-            <a href="/admin/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Logout</a>
-        </div>
-    </div>
+        <div style="padding: 20px;"><a href="/admin/logout" class="menu-item" style="color: var(--danger);"><i class="fa-solid fa-power-off"></i> Logout</a></div>
+    </nav>
 
-    <div class="main">
-        <div class="header">
-            <div class="title"><h2>Event Management</h2></div>
-            <div class="user-info">Hi, <%= user.memberNick %></div>
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Event Oversight</h1>
+                <p>Manage community events created by organizations.</p>
+            </div>
+            <div class="admin-profile">
+                <div class="admin-info"><span class="admin-name"><%= user.memberNick %></span><span class="admin-role">Super Admin</span></div>
+                <div class="admin-avatar"><img src="https://ui-avatars.com/api/?name=<%= user.memberNick %>&background=10b981&color=fff&bold=true"></div>
+            </div>
         </div>
 
-        <div class="table-container">
+        <div class="table-section">
+            <div class="table-header">
+                <h3>All Events</h3>
+            </div>
             <table>
                 <thead>
                     <tr>
-                        <th>No</th>
-                        <th>Banner</th>
-                        <th>Title</th>
-                        <th>Date</th>
+                        <th>Event Details</th>
+                        <th>Location</th>
                         <th>Organizer</th>
-                        <th>Participants</th>
+                        <th>Capacity</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <% events.map(function(event, index) { %>
-                        <tr>
-                            <td><%= index + 1 %></td>
-                            <td>
-                                <img src="<%= event.eventImages[0] ? '/uploads/events/' + event.eventImages[0] : '/img/default-event.jpg' %>" class="table-img" style="border-radius: 4px; width: 60px;">
-                            </td>
-                            <td><%= event.eventTitle %></td>
-                            <td><%= new Date(event.eventDate).toLocaleDateString() %></td>
-                            <td><%= event.memberData.memberNick %></td>
-                            <td><%= event.eventJoined %> / <%= event.eventCapacity %></td>
-                            <td>
-                                <select id="status-<%= event._id %>" onchange="updateStatus('event/edit', '<%= event._id %>', 'status-<%= event._id %>')">
-                                    <option value="ACTIVE" <%= event.eventStatus === 'ACTIVE' ? 'selected' : '' %>>ACTIVE</option>
-                                    <option value="DELETE" <%= event.eventStatus === 'DELETE' ? 'selected' : '' %>>DELETE</option>
-                                </select>
-                            </td>
-                        </tr>
+                    <% events.map(function(event) { %>
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <img src="<%= event.eventImages[0] ? '/uploads/events/' + event.eventImages[0] : 'https://placehold.co/100/162226/FFF?text=Event' %>" class="table-img" style="width: 55px; height: 35px;">
+                                <div>
+                                    <span class="info-main"><%= event.eventTitle %></span>
+                                    <span class="info-sub"><%= new Date(event.eventDate).toLocaleDateString() %></span>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color: var(--text-muted);"><i class="fa-solid fa-map-pin"></i> <%= event.eventLocation %></td>
+                        <td><span class="role-badge ORG"><%= event.memberData.memberNick %></span></td>
+                        <td><%= event.eventJoined %> / <%= event.eventCapacity %></td>
+                        <td>
+                            <div class="status-badge <%= event.eventStatus %>">
+                                <%= event.eventStatus %>
+                            </div>
+                        </td>
+                        <td>
+                            <select class="action-select" id="status-<%= event._id %>" onchange="updateStatus('event/edit', '<%= event._id %>')">
+                                <option value="ACTIVE" <%= event.eventStatus === 'ACTIVE' ? 'selected' : '' %>>Publish</option>
+                                <option value="DELETE" <%= event.eventStatus === 'DELETE' ? 'selected' : '' %>>Delete</option>
+                            </select>
+                        </td>
+                    </tr>
                     <% }) %>
                 </tbody>
             </table>
         </div>
-    </div>
-
+    </main>
     <script src="/js/main.js"></script>
 </body>
 </html>

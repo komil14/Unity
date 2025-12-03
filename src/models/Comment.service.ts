@@ -27,14 +27,24 @@ class CommentService {
   }
 
   public async getComments(inquiry: CommentInquiry): Promise<Comment[]> {
-    const match = { articleId: inquiry.articleId, commentStatus: CommentStatus.ACTIVE };
+    const match = {
+      articleId: inquiry.articleId,
+      commentStatus: CommentStatus.ACTIVE,
+    };
     const result = await this.commentModel
       .aggregate([
         { $match: match },
         { $sort: { createdAt: 1 } },
         { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
         { $limit: inquiry.limit * 1 },
-        { $lookup: { from: "members", localField: "memberId", foreignField: "_id", as: "memberData" } },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
         { $unwind: "$memberData" },
       ])
       .exec();
@@ -46,20 +56,33 @@ class CommentService {
     const result = await this.commentModel
       .aggregate([
         { $sort: { createdAt: -1 } },
-        { $lookup: { from: "members", localField: "memberId", foreignField: "_id", as: "memberData" } },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
         { $unwind: "$memberData" },
       ])
       .exec();
     return result as unknown as Comment[];
   }
 
-  /** BSSR: Update Comment Status */
-  public async updateCommentStatus(input: any): Promise<Comment> {
+  /** BSSR: Update Comment Status (FIXED) */
+  public async updateCommentStatus(input: any): Promise<any> {
+    const commentId = input._id;
     const result = await this.commentModel
-      .findByIdAndUpdate(input._id, { commentStatus: input.commentStatus }, { new: true })
+      .findByIdAndUpdate(
+        commentId,
+        { commentStatus: input.commentStatus }, // <-- Explicitly setting the field
+        { new: true }
+      )
       .exec();
+
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-    return result.toJSON() as unknown as Comment;
+    return result.toJSON() as unknown as any;
   }
 }
 

@@ -2,25 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unity Admin | Signup</title>
+    <title>Unity | Admin Signup</title>
     <link rel="stylesheet" href="/css/main.css">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="auth-body">
-    <div class="auth-card">
-        <h2 style="color: #4e73df; margin-bottom: 20px; font-weight: 800;">UNITY ADMIN</h2>
-        <p style="margin-bottom: 30px; font-size: 0.9rem;">Create a Super Admin Account.</p>
-        
-        <form action="/admin/signup" method="POST">
-            <input type="text" name="memberNick" class="auth-input" placeholder="Username" required>
-            <input type="text" name="memberPhone" class="auth-input" placeholder="Phone Number" required>
-            <input type="password" name="memberPassword" class="auth-input" placeholder="Password" required>
-            <button type="submit" class="btn-primary">Register Account</button>
-        </form>
-        
-        <div style="margin-top: 20px; font-size: 0.8rem;">
-            <a href="/admin/login" style="color: #4e73df; text-decoration: none;">Already have an account? Login!</a>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+            <div class="auth-h">Create Admin</div>
+            <p class="auth-p">Register a new super-user account</p>
+            
+            <form action="/admin/signup" method="POST">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" name="memberNick" class="modern-input" required>
+                </div>
+                <div class="input-group">
+                    <label>Phone Contact</label>
+                    <input type="text" name="memberPhone" class="modern-input" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" name="memberPassword" class="modern-input" required>
+                </div>
+                <button type="submit" class="btn-glow">Create Account</button>
+            </form>
+            
+            <div class="auth-footer">
+                Already have an account? <a href="/admin/login">Login</a>
+            </div>
         </div>
     </div>
 </body>

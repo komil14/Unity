@@ -2,70 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Unity Admin | Articles</title>
+    <title>Unity | Articles</title>
     <link rel="stylesheet" href="/css/main.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
 </head>
 <body>
-
-    <div class="sidebar">
-        <div class="brand">UNITY ADMIN</div>
+    <nav class="sidebar">
+        <div class="brand"><i class="fa-solid fa-leaf"></i> UNITY</div>
         <div class="menu">
-            <a href="/admin"><i class="fas fa-fw fa-tachometer-alt"></i> Dashboard</a>
-            <a href="/admin/users"><i class="fas fa-fw fa-users"></i> Users</a>
-            <a href="/admin/events"><i class="fas fa-fw fa-calendar"></i> Events</a>
-            <a href="/admin/boards" class="active"><i class="fas fa-fw fa-newspaper"></i> Articles</a>
-            <a href="/admin/comments"><i class="fas fa-fw fa-comments"></i> Comments</a>
+            <div class="menu-label">Main</div>
+            <a href="/admin" class="menu-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+            <div class="menu-label">Management</div>
+            <a href="/admin/users" class="menu-item"><i class="fa-solid fa-users"></i> Users</a>
+            <a href="/admin/events" class="menu-item"><i class="fa-solid fa-calendar-days"></i> Events</a>
+            <a href="/admin/boards" class="menu-item active"><i class="fa-solid fa-newspaper"></i> Articles</a>
+            <a href="/admin/comments" class="menu-item"><i class="fa-solid fa-comments"></i> Comments</a>
         </div>
-        <div class="menu" style="flex: 0; padding-bottom: 20px;">
-            <a href="/admin/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Logout</a>
-        </div>
-    </div>
+        <div style="padding: 20px;"><a href="/admin/logout" class="menu-item" style="color: var(--danger);"><i class="fa-solid fa-power-off"></i> Logout</a></div>
+    </nav>
 
-    <div class="main">
-        <div class="header">
-            <div class="title"><h2>Community Articles</h2></div>
-            <div class="user-info">Hi, <%= user.memberNick %></div>
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Community Board</h1>
+                <p>Review articles posted by volunteers.</p>
+            </div>
+            <div class="admin-profile">
+                <div class="admin-info"><span class="admin-name"><%= user.memberNick %></span><span class="admin-role">Super Admin</span></div>
+                <div class="admin-avatar"><img src="https://ui-avatars.com/api/?name=<%= user.memberNick %>&background=10b981&color=fff&bold=true"></div>
+            </div>
         </div>
 
-        <div class="table-container">
+        <div class="table-section">
+            <div class="table-header">
+                <h3>Latest Articles</h3>
+            </div>
             <table>
                 <thead>
                     <tr>
-                        <th>No</th>
-                        <th>Image</th>
-                        <th>Title</th>
+                        <th>Article</th>
                         <th>Author</th>
-                        <th>Views</th>
-                        <th>Likes</th>
+                        <th>Stats</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <% boards.map(function(board, index) { %>
-                        <tr>
-                            <td><%= index + 1 %></td>
-                            <td>
-                                <img src="<%= board.boardImage ? '/uploads/community/' + board.boardImage : '/img/default-article.jpg' %>" class="table-img" style="border-radius: 4px; width: 60px;">
-                            </td>
-                            <td><%= board.boardTitle %></td>
-                            <td><%= board.memberData.memberNick %></td>
-                            <td><%= board.boardViews %></td>
-                            <td><%= board.boardLikes %></td>
-                            <td>
-                                <select id="status-<%= board._id %>" onchange="updateStatus('board/edit', '<%= board._id %>', 'status-<%= board._id %>')">
-                                    <option value="ACTIVE" <%= board.boardStatus === 'ACTIVE' ? 'selected' : '' %>>ACTIVE</option>
-                                    <option value="DELETE" <%= board.boardStatus === 'DELETE' ? 'selected' : '' %>>DELETE</option>
-                                </select>
-                            </td>
-                        </tr>
+                    <% boards.map(function(board) { %>
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <img src="<%= board.boardImage ? '/uploads/community/' + board.boardImage : 'https://placehold.co/100/162226/FFF?text=Article' %>" class="table-img" style="width: 55px; height: 35px;">
+                                <span class="info-main"><%= board.boardTitle %></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="user-cell">
+                                <img src="<%= board.memberData.memberImage ? '/uploads/members/' + board.memberData.memberImage : 'https://ui-avatars.com/api/?name=' + board.memberData.memberNick %>" style="width: 24px; height: 24px; border-radius: 50%;">
+                                <span><%= board.memberData.memberNick %></span>
+                            </div>
+                        </td>
+                        <td style="color: var(--text-muted);">
+                            <i class="fa-solid fa-eye"></i> <%= board.boardViews %> &nbsp; 
+                            <i class="fa-solid fa-heart" style="color: #ef4444;"></i> <%= board.boardLikes %>
+                        </td>
+                        <td>
+                            <div class="status-badge <%= board.boardStatus %>"><%= board.boardStatus %></div>
+                        </td>
+                        <td>
+                            <select class="action-select" id="status-<%= board._id %>" onchange="updateStatus('board/edit', '<%= board._id %>')">
+                                <option value="ACTIVE" <%= board.boardStatus === 'ACTIVE' ? 'selected' : '' %>>Visible</option>
+                                <option value="DELETE" <%= board.boardStatus === 'DELETE' ? 'selected' : '' %>>Hidden</option>
+                            </select>
+                        </td>
+                    </tr>
                     <% }) %>
                 </tbody>
             </table>
         </div>
-    </div>
-
+    </main>
     <script src="/js/main.js"></script>
 </body>
 </html>

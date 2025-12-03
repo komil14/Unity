@@ -27,25 +27,32 @@ class BoardService {
     }
   }
 
-  public async getBoard(memberId: Types.ObjectId | null, id: string): Promise<Board> {
+  public async getBoard(
+    memberId: Types.ObjectId | null,
+    id: string
+  ): Promise<Board> {
     const board = await this.boardModel.findById(id).exec();
-    
+
     if (!board) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     if (board.boardStatus === BoardStatus.DELETE) {
-        throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     }
-    
+
     if (memberId) {
-        const viewInput: ViewInput = { 
-            memberId: memberId, 
-            viewRefId: board._id, 
-            viewGroup: ViewGroup.ARTICLE 
-        };
-        const newView = await this.viewService.insertMemberView(viewInput);
-        if (newView) {
-            await this.boardModel.findByIdAndUpdate(id, { $inc: { boardViews: 1 } }).exec();
-            board.boardViews++;
-        }
+      const viewInput: ViewInput = {
+        memberId: memberId,
+        viewRefId: board._id,
+        viewGroup: ViewGroup.ARTICLE,
+      };
+
+      const newView = await this.viewService.insertMemberView(viewInput);
+
+      if (newView) {
+        await this.boardModel
+          .findByIdAndUpdate(id, { $inc: { boardViews: 1 } })
+          .exec();
+        board.boardViews++;
+      }
     }
 
     return board.toJSON() as unknown as Board;
@@ -57,9 +64,9 @@ class BoardService {
     if (inquiry.search) {
       match.boardTitle = { $regex: new RegExp(inquiry.search, "i") };
     }
-    
+
     if (inquiry.memberId) {
-        match.memberId = inquiry.memberId;
+      match.memberId = inquiry.memberId;
     }
 
     const sort: T = { [inquiry.order || "createdAt"]: -1 };
@@ -107,21 +114,36 @@ class BoardService {
     return result as unknown as Board[];
   }
 
-  /** BSSR: Update Board Status */
-  public async updateBoardStatus(input: BoardInput): Promise<Board> {
-    const boardId = input._id;
+  /** BSSR: Update Board Status (FINAL FIX) */
+  public async updateBoardStatus(input: any): Promise<any> {
+    const boardId = new Types.ObjectId(input._id); // Ensure ID is a valid ObjectId type
     const result = await this.boardModel
-      .findByIdAndUpdate(boardId, { boardStatus: input.boardStatus }, { new: true })
+      .findByIdAndUpdate(
+        boardId,
+        { $set: { boardStatus: input.boardStatus } },
+        { new: true }
+      )
       .exec();
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-
-    return result.toJSON() as unknown as Board;
+    return result.toJSON() as unknown as any;
   }
 
+  /** BSSR: Count Articles (For Admin Dashboard) */
   public async countBoards(): Promise<number> {
     return await this.boardModel.countDocuments();
   }
+  /** BSSR: Get Board Stats */
+  public async getBoardStats(): Promise<any> {
+    const total = await this.boardModel.countDocuments();
+    
+    // Count Articles created in last 24h
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const newBoards = await this.boardModel.countDocuments({ createdAt: { $gte: last24h } });
+
+    return { total, newBoards };
+  }
+  
 }
 
 export default BoardService;

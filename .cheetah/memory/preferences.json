@@ -1,11 +1,11 @@
 {
-  "updated_at": 1764674503109,
+  "updated_at": 1764726420701,
   "workspace": {
     "ui": {
       "colors": [
         {
           "role": "primary",
-          "value": "#6f42c1"
+          "value": "red"
         }
       ]
     }

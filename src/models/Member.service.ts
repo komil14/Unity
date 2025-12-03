@@ -3,7 +3,7 @@ import { LoginInput, Member, MemberInput } from "../libs/types/member";
 import Errors, { Message, HttpCode } from "../libs/Errors";
 import { MemberStatus, MemberType } from "../libs/enums/member.enum";
 import * as bcrypt from "bcryptjs";
-import mongoose from "mongoose";
+import { Types } from "mongoose";
 
 class MemberService {
   private readonly memberModel;
@@ -19,12 +19,18 @@ class MemberService {
     const salt = await bcrypt.genSalt();
     input.memberPassword = await bcrypt.hash(input.memberPassword, salt);
 
+    // Set status based on type: USER is ACTIVE, ORG is PENDING
+    if (input.memberType === MemberType.ORG) {
+      input.memberStatus = MemberStatus.PENDING;
+    } else if (input.memberType === MemberType.USER) {
+      input.memberStatus = MemberStatus.ACTIVE;
+    }
+
     try {
       const result = await this.memberModel.create(input);
-      // Logic: Convert to JSON and delete password
       const resultJson = result.toJSON();
       delete (resultJson as any).memberPassword;
-      
+
       return resultJson as unknown as Member;
     } catch (err) {
       console.log("Error, model:signup", err);
@@ -61,30 +67,31 @@ class MemberService {
     return resultJson as unknown as Member;
   }
 
-  /* BSSR */
+  /* BSSR: Admin Signup */
   public async processSignup(input: MemberInput): Promise<Member> {
     const exist = await this.memberModel
       .findOne({ memberType: MemberType.ADMIN })
       .exec();
-    console.log("exist:", exist);
 
-    if (exist) throw new Errors(HttpCode.BAD_REQUEST, Message.ADMIN_EXISTS); // Ensure ADMIN_EXISTS is in your Errors enum, or use CREATE_FAILED
+    if (exist) throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
 
     const salt: string = await bcrypt.genSalt();
     input.memberPassword = await bcrypt.hash(input.memberPassword, salt);
+    input.memberStatus = MemberStatus.ACTIVE; // Admin is always active
 
     try {
       const result = await this.memberModel.create(input);
-      
+
       const resultJson = result.toJSON();
       delete (resultJson as any).memberPassword;
-      
+
       return resultJson as unknown as Member;
     } catch (err) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
     }
   }
 
+  /* BSSR: Admin Login */
   public async processLogin(input: LoginInput): Promise<Member> {
     const member = await this.memberModel
       .findOne(
@@ -92,8 +99,6 @@ class MemberService {
         { memberNick: 1, memberPassword: 1, memberType: 1, memberStatus: 1 }
       )
       .exec();
-
-    console.log("member:", member);
 
     if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
@@ -110,37 +115,32 @@ class MemberService {
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    const resultJson = result.toJSON();
-    delete (resultJson as any).memberPassword;
-    return resultJson as unknown as Member;
+    return result.toJSON() as unknown as Member;
   }
-
-  /**
-   * BSSR: Get All Members
-   * Used by: AdminController -> to show the table in users.ejs
-   */
+  
+    /** BSSR: Get All Users (Table) */
   public async getUsers(): Promise<Member[]> {
     const result = await this.memberModel
-      .find({ memberType: { $ne: MemberType.ADMIN } }) // Exclude Super Admin
+      .find({ memberType: { $ne: MemberType.ADMIN } })
       .exec();
 
     if (!result || result.length === 0) {
-      // It is often safer to return an empty array than throw error for table views
-      // but keeping your logic:
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     }
 
     return result as unknown as Member[];
   }
-
-  /**
-   * BSSR: Update Member Status
-   * Used by: AdminController -> when Admin clicks "Approve" or "Block"
-   */
+/** BSSR: Update Status (ROBUST FIX) */
   public async updateMember(input: MemberInput): Promise<Member> {
-    const memberId = input._id;
+    // Explicitly convert string ID to ObjectId to ensure MongoDB finds the doc
+    const memberId = new Types.ObjectId(input._id as unknown as string);
+    
     const result = await this.memberModel
-      .findByIdAndUpdate(memberId, input, { new: true })
+      .findOneAndUpdate(
+        { _id: memberId }, 
+        { $set: { memberStatus: input.memberStatus } },
+        { new: true }
+      )
       .exec();
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
@@ -148,20 +148,23 @@ class MemberService {
     return result.toJSON() as unknown as Member;
   }
 
-  /**
-   * BSSR: Get Member Stats
-   * Used by: Admin Dashboard
-   */
+  /** BSSR: Get Stats */
   public async getMemberStats(): Promise<any> {
     const total = await this.memberModel.countDocuments();
-    const active = await this.memberModel.countDocuments({
-      memberStatus: MemberStatus.ACTIVE,
+    const active = await this.memberModel.countDocuments({ memberStatus: MemberStatus.ACTIVE });
+    const blocked = await this.memberModel.countDocuments({ memberStatus: MemberStatus.BLOCK });
+    const pending = await this.memberModel.countDocuments({ memberStatus: MemberStatus.PENDING });
+    
+    // Count New Users (Last 24h)
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const newUsers = await this.memberModel.countDocuments({ 
+        memberType: MemberType.USER,
+        createdAt: { $gte: last24h } 
     });
-    const blocked = await this.memberModel.countDocuments({
-      memberStatus: MemberStatus.BLOCK,
-    });
-    return { total, active, blocked };
+    
+    return { total, active, blocked, pending, newUsers };
   }
 }
+
 
 export default MemberService;

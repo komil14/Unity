@@ -17,9 +17,6 @@ class EventService {
     this.viewService = new ViewService();
   }
 
-  /**
-   * Create Event
-   */
   public async createEvent(input: EventInput): Promise<Event> {
     const exist = await this.eventModel
       .findOne({
@@ -29,9 +26,7 @@ class EventService {
       })
       .exec();
 
-    if (exist) {
-      throw new Errors(HttpCode.CONFLICT, Message.CREATE_FAILED);
-    }
+    if (exist) throw new Errors(HttpCode.CONFLICT, Message.CREATE_FAILED);
 
     try {
       const result = await this.eventModel.create(input);
@@ -42,9 +37,6 @@ class EventService {
     }
   }
 
-  /**
-   * Get Single Event (With View Counting)
-   */
   public async getEvent(
     memberId: Types.ObjectId | null,
     id: string
@@ -56,16 +48,13 @@ class EventService {
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     }
 
-    // VIEW COUNTING LOGIC
     if (memberId) {
       const viewInput: ViewInput = {
         memberId: memberId,
         viewRefId: event._id,
         viewGroup: ViewGroup.EVENT,
       };
-
       const newView = await this.viewService.insertMemberView(viewInput);
-
       if (newView) {
         await this.eventModel
           .findByIdAndUpdate(id, { $inc: { eventViews: 1 } })
@@ -73,23 +62,14 @@ class EventService {
         event.eventViews++;
       }
     }
-
     return event.toJSON() as unknown as Event;
   }
 
-  /**
-   * Get All Events (Feed)
-   */
   public async getEvents(inquiry: EventInquiry): Promise<Event[]> {
     const match: T = { eventStatus: EventStatus.ACTIVE };
-
-    if (inquiry.search) {
+    if (inquiry.search)
       match.eventTitle = { $regex: new RegExp(inquiry.search, "i") };
-    }
-
-    if (inquiry.memberId) {
-      match.memberId = inquiry.memberId;
-    }
+    if (inquiry.memberId) match.memberId = inquiry.memberId;
 
     const sort: T = { [inquiry.order || "createdAt"]: -1 };
 
@@ -112,13 +92,10 @@ class EventService {
       .exec();
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-
     return result as unknown as Event[];
   }
 
-  /**
-   * BSSR: Get All Events (For Admin)
-   */
+  /** BSSR: Get All Events (For Admin) */
   public async getAllEventsAdmin(): Promise<Event[]> {
     const result = await this.eventModel
       .aggregate([
@@ -134,32 +111,36 @@ class EventService {
         { $unwind: "$memberData" },
       ])
       .exec();
-
     return result as unknown as Event[];
   }
 
-  /**
-   * BSSR: Update Event Status
-   */
-  public async updateEventStatus(input: EventInput): Promise<Event> {
-    const eventId = input._id;
+  /** BSSR: Update Event Status (ROBUST FIX) */
+  public async updateEventStatus(input: any): Promise<any> {
+    const eventId = new Types.ObjectId(input._id as string); // Explicit Cast
     const result = await this.eventModel
-      .findByIdAndUpdate(
-        eventId,
-        { eventStatus: input.eventStatus }, // Fixed: lowercase eventStatus
+      .findOneAndUpdate(
+        { _id: eventId }, 
+        { $set: { eventStatus: input.eventStatus } }, 
         { new: true }
       )
       .exec();
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-
-    return result.toJSON() as unknown as Event;
+    return result.toJSON() as unknown as any;
   }
 
-  /**
-   * BSSR: Count Events (For Admin Dashboard)
-   * This was missing in your snippet!
-   */
+  /** BSSR: Count Events & New Logic */
+  public async getEventStats(): Promise<any> {
+    const total = await this.eventModel.countDocuments();
+    
+    // Count Events created in last 24h
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const newEvents = await this.eventModel.countDocuments({ createdAt: { $gte: last24h } });
+
+    return { total, newEvents };
+  }
+  
+  // You can keep countEvents() if you use it elsewhere, or replace it with this.
   public async countEvents(): Promise<number> {
     return await this.eventModel.countDocuments();
   }
