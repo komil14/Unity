@@ -12,6 +12,7 @@ const router = express.Router();
 /** MEMBER ROUTES */
 router.post("/member/signup", memberController.signup);
 router.post("/member/login", memberController.login);
+router.get("/member/check-auth", memberController.checkAuth);
 
 /** EVENT ROUTES */
 router.post(
