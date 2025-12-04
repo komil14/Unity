@@ -48,103 +48,100 @@
           <p>Welcome back, here is what's happening today.</p>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 20px;">
-            
-            <!-- NOTIFICATION CENTER -->
-            <div class="notification-box" onclick="clearBadge()">
-                <i class="fa-solid fa-bell notification-icon"></i>
-                
-                <% 
-                   // Safe check for notifications object
-                   const hasNotifs = (typeof notifications !== 'undefined' && notifications.total > 0);
-                   const notifTotal = hasNotifs ? notifications.total : 0;
-                %>
+        <div style="display: flex; align-items: center; gap: 20px">
+          <!-- NOTIFICATION CENTER -->
+          <div class="notification-box" onclick="clearBadge()">
+            <i class="fa-solid fa-bell notification-icon"></i>
 
-                <!-- Red Badge logic -->
-                <div id="notif-badge" class="notification-badge" style="<%= hasNotifs ? '' : 'display: none;' %>">
-                    <%= notifTotal %>
-                </div>
-
-                <!-- Dropdown Menu -->
-                <div class="notification-dropdown">
-                    <div class="notif-header">Recent Updates</div>
-                    
-                    <% if (!hasNotifs) { %>
-                        <div class="notif-empty">No new updates today.</div>
-                    <% } else { %>
-                        
-                        <!-- 1. Pending Orgs -->
-                        <% if (notifications.pendingOrgs > 0) { %>
-                        <a href="/admin/users" class="notif-item">
-                            <div class="notif-icon warn"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            <div class="notif-text">
-                                <strong><%= notifications.pendingOrgs %> Pending Org(s)</strong>
-                                <span>Action Required</span>
-                            </div>
-                        </a>
-                        <% } %>
-
-                        <!-- 2. New Users -->
-                        <% if (notifications.newUsers > 0) { %>
-                        <a href="/admin/users" class="notif-item info">
-                            <div class="notif-icon info"><i class="fa-solid fa-user-plus"></i></div>
-                            <div class="notif-text">
-                                <strong><%= notifications.newUsers %> New User(s)</strong>
-                                <span>Joined recently</span>
-                            </div>
-                        </a>
-                        <% } %>
-
-                        <!-- 3. New Events -->
-                        <% if (notifications.newEvents > 0) { %>
-                        <a href="/admin/events" class="notif-item success">
-                            <div class="notif-icon success"><i class="fa-solid fa-calendar-plus"></i></div>
-                            <div class="notif-text">
-                                <strong><%= notifications.newEvents %> New Event(s)</strong>
-                                <span>Created recently</span>
-                            </div>
-                        </a>
-                        <% } %>
-
-                        <!-- 4. New Articles -->
-                        <% if (notifications.newBoards > 0) { %>
-                        <a href="/admin/boards" class="notif-item success">
-                            <div class="notif-icon success"><i class="fa-solid fa-pen-nib"></i></div>
-                            <div class="notif-text">
-                                <strong><%= notifications.newBoards %> New Article(s)</strong>
-                                <span>Posted recently</span>
-                            </div>
-                        </a>
-                        <% } %>
-
-                    <% } %>
-                </div>
+            <!-- Safe EJS Logic for Badge -->
+            <% if (typeof notifications !== 'undefined' && notifications.total >
+            0) { %>
+            <div id="notif-badge" class="notification-badge">
+              <%= notifications.total %>
             </div>
-            <!-- END NOTIFICATION CENTER -->
-
-            <!-- Admin Profile -->
-            <div class="admin-profile">
-              <div class="admin-info">
-                <span class="admin-name"><%= user.memberNick %></span>
-                <span class="admin-role">Super Admin</span>
-              </div>
-              <div class="admin-avatar">
-                <img
-                  src="https://ui-avatars.com/api/?name=<%= user.memberNick %>&background=10b981&color=fff&bold=true"
-                />
-              </div>
+            <% } else { %>
+            <div
+              id="notif-badge"
+              class="notification-badge"
+              style="display: none"
+            >
+              0
             </div>
+            <% } %>
+
+            <!-- Dropdown -->
+            <div class="notification-dropdown">
+              <div class="notif-header">Recent Updates</div>
+
+              <% if (typeof notifications === 'undefined' || notifications.total
+              === 0) { %>
+              <div class="notif-empty">No new updates today.</div>
+              <% } else { %> <% if (notifications.pendingOrgs > 0) { %>
+              <a href="/admin/users" class="notif-item">
+                <div class="notif-icon warn">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="notif-text">
+                  <strong
+                    ><%= notifications.pendingOrgs %> Pending Org(s)</strong
+                  >
+                  require approval.
+                </div>
+              </a>
+              <% } %> <% if (notifications.newUsers > 0) { %>
+              <a href="/admin/users" class="notif-item info">
+                <div class="notif-icon info">
+                  <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <div class="notif-text">
+                  <strong><%= notifications.newUsers %> New User(s)</strong>
+                  joined in last 24h.
+                </div>
+              </a>
+              <% } %> <% if (notifications.newEvents > 0) { %>
+              <a href="/admin/events" class="notif-item success">
+                <div class="notif-icon success">
+                  <i class="fa-solid fa-calendar-plus"></i>
+                </div>
+                <div class="notif-text">
+                  <strong><%= notifications.newEvents %> New Event(s)</strong>
+                  created recently.
+                </div>
+              </a>
+              <% } %> <% if (notifications.newBoards > 0) { %>
+              <a href="/admin/boards" class="notif-item success">
+                <div class="notif-icon success">
+                  <i class="fa-solid fa-pen-nib"></i>
+                </div>
+                <div class="notif-text">
+                  <strong><%= notifications.newBoards %> New Article(s)</strong>
+                  posted.
+                </div>
+              </a>
+              <% } %> <% } %>
+            </div>
+          </div>
+
+          <div class="admin-profile">
+            <div class="admin-info">
+              <span class="admin-name"><%= user.memberNick %></span>
+              <span class="admin-role">Super Admin</span>
+            </div>
+            <div class="admin-avatar">
+              <img
+                src="https://ui-avatars.com/api/?name=<%= user.memberNick %>&background=10b981&color=fff&bold=true"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Logic for Notification Card -->
-      <% 
-        const pendingCount = (typeof stats !== 'undefined' && stats.members) ? stats.members.pending : 0; 
-        const isPending = pendingCount > 0; 
-      %>
+      <% const pendingCount = (typeof stats !== 'undefined' && stats.members) ?
+      stats.members.pending : 0; const isPending = pendingCount > 0; %>
 
       <div class="stats-container">
-        <!-- PENDING CARD (Actionable) -->
+        <!-- PENDING CARD -->
         <a href="/admin/users" style="text-decoration: none">
           <div class="stat-card <%= isPending ? 'action-required' : '' %>">
             <div class="stat-icon"><i class="fa-solid fa-bell"></i></div>
@@ -226,10 +223,9 @@
               font-weight: 700;
               transition: all 0.2s;
             "
-            onmouseover="this.style.transform='translateY(-2px)'"
-            onmouseout="this.style.transform='translateY(0)'"
-            >Go to Users Page &rarr;</a
           >
+            Go to Users Page &rarr;
+          </a>
           <% } else { %>
           <i
             class="fa-solid fa-check-circle"
@@ -246,34 +242,29 @@
       </div>
     </main>
 
-    <!-- NOTIFICATION SCRIPT (FIXED) -->
+    <!-- FIXED SCRIPT -->
     <script>
-        // 1. Safe assignment using Number() and quotes logic
-        const serverTotal = Number("<%= (typeof notifications !== 'undefined' && notifications.total) ? notifications.total : 0 %>");
-        
-        const badge = document.getElementById('notif-badge');
-        
-        // 2. Check localStorage for "read" status
-        const lastSeenCount = localStorage.getItem('notif_count');
-        
-        // 3. Logic: Only show badge if there are NEW items since last click
-        if (serverTotal > 0) {
-            // If we have never seen them, OR current total > what we saw last
-            if (!lastSeenCount || serverTotal > parseInt(lastSeenCount)) {
-                if(badge) badge.style.display = 'flex';
-            } else {
-                if(badge) badge.style.display = 'none';
-            }
-        } else {
-            if(badge) badge.style.display = 'none';
-        }
+      // Use quotes to make it a string, then parse. If empty, default to '0'.
+      const rawTotal =
+        "<%= (typeof notifications !== 'undefined' && notifications.total) ? notifications.total : 0 %>";
+      const serverTotal = Number(rawTotal);
 
-        // 4. Click Handler: Hide badge and save state
-        function clearBadge() {
-            if(badge) badge.style.display = 'none';
-            // Save current count as "seen" so badge doesn't reappear on refresh
-            localStorage.setItem('notif_count', serverTotal);
-        }
+      const badge = document.getElementById("notif-badge");
+      const lastSeenCount = localStorage.getItem("notif_count");
+
+      if (
+        serverTotal > 0 &&
+        (!lastSeenCount || serverTotal > parseInt(lastSeenCount))
+      ) {
+        if (badge) badge.style.display = "flex";
+      } else {
+        if (badge) badge.style.display = "none";
+      }
+
+      function clearBadge() {
+        if (badge) badge.style.display = "none";
+        localStorage.setItem("notif_count", serverTotal);
+      }
     </script>
   </body>
 </html>
