@@ -7,6 +7,8 @@ import Errors, { HttpCode, Message } from "../libs/Errors";
 import { MemberType } from "../libs/enums/member.enum";
 import { AdminRequest } from "../libs/types/member";
 
+import { Types } from "mongoose";
+
 const eventService = new EventService();
 const eventController: T = {};
 
@@ -48,6 +50,9 @@ eventController.getEvents = async (req: Request, res: Response) => {
       limit: Number(req.query.limit) || 5,
       order: req.query.order ? String(req.query.order) : "createdAt",
       search: req.query.search ? String(req.query.search) : undefined,
+      memberId: req.query.memberId
+        ? new Types.ObjectId(String(req.query.memberId))
+        : undefined,
     };
 
     const result = await eventService.getEvents(inquiry);
