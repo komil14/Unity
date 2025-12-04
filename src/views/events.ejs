@@ -54,7 +54,11 @@
                     <tr>
                         <td>
                             <div class="user-cell">
-                                <img src="<%= event.eventImages[0] ? '/uploads/events/' + event.eventImages[0] : 'https://placehold.co/100/162226/FFF?text=Event' %>" class="table-img" style="width: 55px; height: 35px;">
+                                <img src="<%=
+                                    event.eventImages[0]
+                                        ? '/uploads/events/' + (event.eventImages[0].includes('/') ? event.eventImages[0].split('/').pop() : event.eventImages[0])
+                                        : 'https://placehold.co/100/162226/FFF?text=Event'
+                                %>" class="table-img" style="width: 55px; height: 35px;">
                                 <div>
                                     <span class="info-main"><%= event.eventTitle %></span>
                                     <span class="info-sub"><%= new Date(event.eventDate).toLocaleDateString() %></span>

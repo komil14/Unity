@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import path from "path";
 import { T } from "../libs/types/common";
 import EventService from "../models/Event.service";
 import { EventInquiry, EventInput } from "../libs/types/event";
@@ -14,15 +15,18 @@ eventController.createEvent = async (req: AdminRequest, res: Response) => {
   try {
     // Security: Only Organizations can create events
     if (req.member.memberType !== MemberType.ORG) {
-        throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
     }
 
     const input: EventInput = req.body;
-    
-    // Image Handling
-    if (!req.file) throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
-    input.eventImages = [req.file.path.replace(/\\/g, "/")];
-    
+
+    // Image Handling - store only filename so views can build `/uploads/<folder>/<filename>` URLs
+    if (!req.file)
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    const filename =
+      (req.file as any).filename || path.basename((req.file as any).path || "");
+    input.eventImages = [filename];
+
     // Inject Creator
     input.memberId = req.member._id;
 
@@ -30,7 +34,8 @@ eventController.createEvent = async (req: AdminRequest, res: Response) => {
     res.status(201).json(result);
   } catch (err: any) {
     console.log("Error, createEvent:", err);
-    if (err instanceof Errors) res.status(err.code).json({ message: err.message });
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
     else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
   }
 };
@@ -44,31 +49,33 @@ eventController.getEvents = async (req: Request, res: Response) => {
       order: req.query.order ? String(req.query.order) : "createdAt",
       search: req.query.search ? String(req.query.search) : undefined,
     };
-    
+
     const result = await eventService.getEvents(inquiry);
     res.status(200).json(result);
   } catch (err: any) {
     console.log("Error, getEvents:", err);
-    if (err instanceof Errors) res.status(err.code).json({ message: err.message });
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
     else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
   }
 };
 
 /** GET: Single Event Detail (With View Counting) */
 eventController.getEvent = async (req: AdminRequest, res: Response) => {
-    try {
-        const { id } = req.params;
-        
-        // If user is logged in (via retrieveAuth), pass their ID. Otherwise pass null.
-        const memberId = req.member?._id ?? null; 
-        
-        const result = await eventService.getEvent(memberId, id);
-        res.status(200).json(result);
-    } catch (err: any) {
-        console.log("Error, getEvent:", err);
-        if (err instanceof Errors) res.status(err.code).json({ message: err.message });
-        else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
-    }
-}
+  try {
+    const { id } = req.params;
+
+    // If user is logged in (via retrieveAuth), pass their ID. Otherwise pass null.
+    const memberId = req.member?._id ?? null;
+
+    const result = await eventService.getEvent(memberId, id);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, getEvent:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
 
 export default eventController;
