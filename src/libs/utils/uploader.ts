@@ -9,8 +9,8 @@ import { v4 as uuidv4 } from "uuid";
 function getTargetImageStorage(folderName: string) {
   return multer.diskStorage({
     destination: function (req, file, cb) {
-      // Define where the file goes: src/public/uploads/{folderName}
-      const uploadPath = path.join(__dirname, "../../public/uploads", folderName);
+      // Define where the file goes: uploads/{folderName} at project root
+      const uploadPath = path.join(__dirname, "../../../uploads", folderName);
       cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
