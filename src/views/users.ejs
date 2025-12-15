@@ -55,7 +55,14 @@
                             <div class="user-cell">
                                 <img src="<%= member.memberImage ? '/uploads/members/' + member.memberImage : 'https://ui-avatars.com/api/?name=' + member.memberNick + '&background=random' %>" class="table-img">
                                 <div>
-                                    <span class="info-main"><%= member.memberNick %></span>
+                                    <span class="info-main">
+                                        <%= member.memberNick %>
+                                        <% if(member.memberType === 'ORG' && member.isVerified) { %>
+                                            <i class="fa-solid fa-circle-check verified-badge" id="verified-<%= member._id %>" title="Verified Organization"></i>
+                                        <% } else if(member.memberType === 'ORG') { %>
+                                            <i class="fa-solid fa-circle-check verified-badge" id="verified-<%= member._id %>" style="display: none;" title="Verified Organization"></i>
+                                        <% } %>
+                                    </span>
                                     <span class="info-sub">ID: ...<%= member._id.toString().slice(-6) %></span>
                                 </div>
                             </div>

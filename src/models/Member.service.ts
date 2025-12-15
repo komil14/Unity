@@ -117,8 +117,8 @@ class MemberService {
 
     return result.toJSON() as unknown as Member;
   }
-  
-    /** BSSR: Get All Users (Table) */
+
+  /** BSSR: Get All Users (Table) */
   public async getUsers(): Promise<Member[]> {
     const result = await this.memberModel
       .find({ memberType: { $ne: MemberType.ADMIN } })
@@ -130,17 +130,30 @@ class MemberService {
 
     return result as unknown as Member[];
   }
-/** BSSR: Update Status (ROBUST FIX) */
+  /** BSSR: Update Status (ROBUST FIX) */
   public async updateMember(input: MemberInput): Promise<Member> {
     // Explicitly convert string ID to ObjectId to ensure MongoDB finds the doc
     const memberId = new Types.ObjectId(input._id as unknown as string);
-    
+
+    // Get the member to check type
+    const member = await this.memberModel.findById(memberId).exec();
+    if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    // Set/remove verification badge based on org status
+    const updateData: any = { memberStatus: input.memberStatus };
+    if (member.memberType === MemberType.ORG) {
+      if (input.memberStatus === MemberStatus.ACTIVE) {
+        updateData.isVerified = true;
+      } else if (
+        input.memberStatus === MemberStatus.PENDING ||
+        input.memberStatus === MemberStatus.BLOCK
+      ) {
+        updateData.isVerified = false;
+      }
+    }
+
     const result = await this.memberModel
-      .findOneAndUpdate(
-        { _id: memberId }, 
-        { $set: { memberStatus: input.memberStatus } },
-        { new: true }
-      )
+      .findOneAndUpdate({ _id: memberId }, { $set: updateData }, { new: true })
       .exec();
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
@@ -151,20 +164,25 @@ class MemberService {
   /** BSSR: Get Stats */
   public async getMemberStats(): Promise<any> {
     const total = await this.memberModel.countDocuments();
-    const active = await this.memberModel.countDocuments({ memberStatus: MemberStatus.ACTIVE });
-    const blocked = await this.memberModel.countDocuments({ memberStatus: MemberStatus.BLOCK });
-    const pending = await this.memberModel.countDocuments({ memberStatus: MemberStatus.PENDING });
-    
+    const active = await this.memberModel.countDocuments({
+      memberStatus: MemberStatus.ACTIVE,
+    });
+    const blocked = await this.memberModel.countDocuments({
+      memberStatus: MemberStatus.BLOCK,
+    });
+    const pending = await this.memberModel.countDocuments({
+      memberStatus: MemberStatus.PENDING,
+    });
+
     // Count New Users (Last 24h)
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const newUsers = await this.memberModel.countDocuments({ 
-        memberType: MemberType.USER,
-        createdAt: { $gte: last24h } 
+    const newUsers = await this.memberModel.countDocuments({
+      memberType: MemberType.USER,
+      createdAt: { $gte: last24h },
     });
-    
+
     return { total, active, blocked, pending, newUsers };
   }
 }
-
 
 export default MemberService;
