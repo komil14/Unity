@@ -8,7 +8,8 @@
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
     "train": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/train.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "fix-images": "ts-node src/scripts/fix-image-paths.ts"
   },
   "author": "\"MIT\"",
   "license": "ISC",

@@ -17,6 +17,19 @@ class EventService {
     this.viewService = new ViewService();
   }
 
+  /**
+   * Helper: Clean image paths (remove absolute paths, keep only filename)
+   */
+  private sanitizeImagePaths(images: string[]): string[] {
+    return images.map((img) => {
+      // If contains path separators, extract just the filename
+      if (img.includes("/") || img.includes("\\")) {
+        return img.split(/[/\\]/).pop() || img;
+      }
+      return img;
+    });
+  }
+
   public async createEvent(input: EventInput): Promise<Event> {
     const exist = await this.eventModel
       .findOne({
@@ -62,7 +75,13 @@ class EventService {
         event.eventViews++;
       }
     }
-    return event.toJSON() as unknown as Event;
+
+    // Sanitize image paths before returning
+    const eventData = event.toJSON() as unknown as Event;
+    if (eventData.eventImages) {
+      eventData.eventImages = this.sanitizeImagePaths(eventData.eventImages);
+    }
+    return eventData;
   }
 
   public async getEvents(inquiry: EventInquiry): Promise<Event[]> {
@@ -92,7 +111,16 @@ class EventService {
       .exec();
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-    return result as unknown as Event[];
+
+    // Sanitize image paths for all events
+    const sanitizedResult = result.map((event: any) => {
+      if (event.eventImages) {
+        event.eventImages = this.sanitizeImagePaths(event.eventImages);
+      }
+      return event;
+    });
+
+    return sanitizedResult as unknown as Event[];
   }
 
   /** BSSR: Get All Events (For Admin) */
@@ -111,7 +139,16 @@ class EventService {
         { $unwind: "$memberData" },
       ])
       .exec();
-    return result as unknown as Event[];
+
+    // Sanitize image paths for all events
+    const sanitizedResult = result.map((event: any) => {
+      if (event.eventImages) {
+        event.eventImages = this.sanitizeImagePaths(event.eventImages);
+      }
+      return event;
+    });
+
+    return sanitizedResult as unknown as Event[];
   }
 
   /** BSSR: Update Event Status (ROBUST FIX) */
@@ -119,8 +156,8 @@ class EventService {
     const eventId = new Types.ObjectId(input._id as string); // Explicit Cast
     const result = await this.eventModel
       .findOneAndUpdate(
-        { _id: eventId }, 
-        { $set: { eventStatus: input.eventStatus } }, 
+        { _id: eventId },
+        { $set: { eventStatus: input.eventStatus } },
         { new: true }
       )
       .exec();
@@ -132,14 +169,16 @@ class EventService {
   /** BSSR: Count Events & New Logic */
   public async getEventStats(): Promise<any> {
     const total = await this.eventModel.countDocuments();
-    
+
     // Count Events created in last 24h
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const newEvents = await this.eventModel.countDocuments({ createdAt: { $gte: last24h } });
+    const newEvents = await this.eventModel.countDocuments({
+      createdAt: { $gte: last24h },
+    });
 
     return { total, newEvents };
   }
-  
+
   // You can keep countEvents() if you use it elsewhere, or replace it with this.
   public async countEvents(): Promise<number> {
     return await this.eventModel.countDocuments();
