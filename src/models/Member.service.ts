@@ -344,6 +344,29 @@ class MemberService {
           },
         },
         {
+          // Pick a single representative banner image from the organizer's strongest event
+          $lookup: {
+            from: "events",
+            let: { orgId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$memberId", "$$orgId"] },
+                      { $eq: ["$eventStatus", EventStatus.ACTIVE] },
+                    ],
+                  },
+                },
+              },
+              { $sort: { eventLikes: -1, eventViews: -1, createdAt: -1 } },
+              { $limit: 1 },
+              { $project: { eventImages: 1 } },
+            ],
+            as: "topEvent",
+          },
+        },
+        {
           $lookup: {
             from: "boards",
             let: { orgId: "$_id" },
@@ -390,6 +413,12 @@ class MemberService {
             eventsViewsTotal: { $sum: "$events.eventViews" },
             articlesCount: { $size: "$articles" },
             articleCommentsCount: { $size: "$articleComments" },
+            bannerImage: {
+              $let: {
+                vars: { top: { $arrayElemAt: ["$topEvent", 0] } },
+                in: { $arrayElemAt: ["$$top.eventImages", 0] },
+              },
+            },
           },
         },
         {
@@ -414,6 +443,7 @@ class MemberService {
           $project: {
             memberPassword: 0,
             events: 0,
+            topEvent: 0,
             articles: 0,
             articleComments: 0,
           },
