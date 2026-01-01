@@ -1,6 +1,8 @@
 import MemberModel from "../schemas/Member.schema";
 import EventModel from "../schemas/Event.schema";
 import GroupModel from "../schemas/Group.schema";
+import BoardModel from "../schemas/Board.schema";
+import CommentModel from "../schemas/Comment.schema";
 import { LoginInput, Member, MemberInput } from "../libs/types/member";
 import Errors, { Message, HttpCode } from "../libs/Errors";
 import { MemberStatus, MemberType } from "../libs/enums/member.enum";
@@ -10,17 +12,23 @@ import ViewService from "./View.service";
 import { ViewGroup } from "../libs/enums/view.enum";
 import { EventStatus } from "../libs/enums/event.enum";
 import { GroupStatus } from "../libs/enums/group.enum";
+import { BoardStatus } from "../libs/enums/board.enum";
+import { CommentStatus } from "../libs/enums/comment.enum";
 
 class MemberService {
   private readonly memberModel;
   private readonly eventModel;
   private readonly groupModel;
+  private readonly boardModel;
+  private readonly commentModel;
   private readonly viewService;
 
   constructor() {
     this.memberModel = MemberModel;
     this.eventModel = EventModel;
     this.groupModel = GroupModel;
+    this.boardModel = BoardModel;
+    this.commentModel = CommentModel;
     this.viewService = new ViewService();
   }
 
@@ -300,6 +308,119 @@ class MemberService {
       organizedEvents: organizedEvents.map((e: any) => e.toJSON()),
       organizedGroups: organizedGroups.map((g: any) => g.toJSON()),
     };
+  }
+
+  /** SPA: Get Top Organizers (ranked by engagement + output) */
+  public async getTopOrganizers(limit = 4): Promise<any[]> {
+    const safeLimit = Math.max(1, Math.min(20, Number(limit) || 4));
+
+    const result = await this.memberModel
+      .aggregate([
+        {
+          $match: {
+            memberType: MemberType.ORG,
+            memberStatus: MemberStatus.ACTIVE,
+          },
+        },
+        {
+          $lookup: {
+            from: "events",
+            let: { orgId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$memberId", "$$orgId"] },
+                      { $eq: ["$eventStatus", EventStatus.ACTIVE] },
+                    ],
+                  },
+                },
+              },
+              { $project: { eventLikes: 1, eventViews: 1 } },
+            ],
+            as: "events",
+          },
+        },
+        {
+          $lookup: {
+            from: "boards",
+            let: { orgId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$memberId", "$$orgId"] },
+                      { $eq: ["$boardStatus", BoardStatus.ACTIVE] },
+                    ],
+                  },
+                },
+              },
+              { $project: { _id: 1 } },
+            ],
+            as: "articles",
+          },
+        },
+        {
+          $lookup: {
+            from: "comments",
+            let: { articleIds: "$articles._id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $in: ["$articleId", "$$articleIds"] },
+                      { $eq: ["$commentStatus", CommentStatus.ACTIVE] },
+                    ],
+                  },
+                },
+              },
+              { $project: { _id: 1 } },
+            ],
+            as: "articleComments",
+          },
+        },
+        {
+          $addFields: {
+            eventsCount: { $size: "$events" },
+            eventsLikesTotal: { $sum: "$events.eventLikes" },
+            eventsViewsTotal: { $sum: "$events.eventViews" },
+            articlesCount: { $size: "$articles" },
+            articleCommentsCount: { $size: "$articleComments" },
+          },
+        },
+        {
+          $addFields: {
+            // Simple weighted score: mixes organizer + event + content signals
+            topScore: {
+              $add: [
+                { $multiply: ["$memberLikes", 3] },
+                { $multiply: ["$memberViews", 1] },
+                { $multiply: ["$eventsCount", 10] },
+                { $multiply: ["$eventsLikesTotal", 2] },
+                { $multiply: ["$eventsViewsTotal", 1] },
+                { $multiply: ["$articlesCount", 4] },
+                { $multiply: ["$articleCommentsCount", 1] },
+              ],
+            },
+          },
+        },
+        { $sort: { topScore: -1, memberViews: -1, createdAt: -1 } },
+        { $limit: safeLimit },
+        {
+          $project: {
+            memberPassword: 0,
+            events: 0,
+            articles: 0,
+            articleComments: 0,
+          },
+        },
+      ])
+      .exec();
+
+    return result;
   }
 }
 

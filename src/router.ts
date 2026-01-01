@@ -17,6 +17,7 @@ router.get("/member/check-auth", memberController.checkAuth);
 
 /** ORGANIZER ROUTES */
 router.get("/organizer/all", memberController.getOrganizers);
+router.get("/organizer/top", memberController.getTopOrganizers);
 router.get(
   "/organizer/detail/:id",
   memberController.retrieveAuth,

@@ -214,4 +214,18 @@ memberController.getOrganizer = async (req: AdminRequest, res: Response) => {
   }
 };
 
+/** GET: Top Organizers (ranked) */
+memberController.getTopOrganizers = async (req: Request, res: Response) => {
+  try {
+    const limit = Number(req.query.limit) || 4;
+    const result = await memberService.getTopOrganizers(limit);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, getTopOrganizers:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 export default memberController;
