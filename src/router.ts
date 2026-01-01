@@ -111,4 +111,10 @@ router.post(
   likeController.toggleLike
 );
 
+router.post(
+  "/like/exists-batch",
+  memberController.retrieveAuth,
+  likeController.checkLikesBatch
+);
+
 export default router;

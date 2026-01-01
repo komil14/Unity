@@ -4,9 +4,10 @@ import EventModel from "../schemas/Event.schema";
 import BoardModel from "../schemas/Board.schema";
 import CommentModel from "../schemas/Comment.schema";
 import GroupModel from "../schemas/Group.schema";
-import { LikeInput, Like } from "../libs/types/like";
+import { LikeBatchInput, LikeInput, Like } from "../libs/types/like";
 import { LikeGroup } from "../libs/enums/like.enum";
 import Errors, { HttpCode, Message } from "../libs/Errors";
+import { Types } from "mongoose";
 
 class LikeService {
   private readonly likeModel;
@@ -61,6 +62,37 @@ class LikeService {
       })
       .exec();
     return !!exist;
+  }
+
+  public async checkLikesExistenceBatch(
+    input: LikeBatchInput
+  ): Promise<string[]> {
+    const { memberId, likeGroup, likeRefIds } = input;
+    if (!memberId) return [];
+    if (!Array.isArray(likeRefIds) || likeRefIds.length === 0) return [];
+
+    const ids = likeRefIds
+      .filter(Boolean)
+      .map((id: any) => {
+        try {
+          return id instanceof Types.ObjectId
+            ? id
+            : new Types.ObjectId(String(id));
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as Types.ObjectId[];
+
+    if (ids.length === 0) return [];
+
+    const likes = await this.likeModel
+      .find({ memberId, likeGroup, likeRefId: { $in: ids } })
+      .select({ likeRefId: 1, _id: 0 })
+      .lean()
+      .exec();
+
+    return likes.map((l: any) => String(l.likeRefId));
   }
 
   /**
