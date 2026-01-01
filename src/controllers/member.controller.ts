@@ -157,22 +157,20 @@ adminController.updateEvent = async (req: Request, res: Response) => {
 memberController.checkAuth = async (req: AdminRequest, res: Response) => {
   try {
     const token = req.cookies["accessToken"];
-    if (!token)
-      throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    if (!token) {
+      return res.status(200).json({ member: null });
+    }
 
     const member = await authService.checkAuth(token);
-    if (!member)
-      throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    if (!member) {
+      return res.status(200).json({ member: null });
+    }
 
     res.status(200).json({ member: member });
   } catch (err: any) {
     console.log("Error, checkAuth:", err);
-    if (err instanceof Errors)
-      res.status(err.code).json({ message: err.message });
-    else
-      res
-        .status(HttpCode.UNAUTHORIZED)
-        .json({ message: Message.NOT_AUTHENTICATED });
+    // Treat failures as unauthenticated rather than an error state.
+    return res.status(200).json({ member: null });
   }
 };
 
