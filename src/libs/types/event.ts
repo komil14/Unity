@@ -3,39 +3,42 @@ import { EventStatus } from "../enums/event.enum";
 
 // 1. DB Document Interface
 export interface Event {
-    _id: Types.ObjectId;
-    eventStatus: EventStatus;
-    eventTitle: string;
-    eventDesc: string;
-    eventLocation: string;
-    eventDate: Date;
-    eventCapacity: number;
-    eventJoined: number;
-    eventImages: string[];
-    eventPoints: number;
-    memberId: Types.ObjectId; // Creator (Organization)
-    eventLikes: number;
-    eventViews: number;
-    createdAt: Date;
-    updatedAt: Date;
+  _id: Types.ObjectId;
+  eventStatus: EventStatus;
+  eventTitle: string;
+  eventDesc: string;
+  eventLocation: string;
+  eventDate: Date;
+  eventCapacity: number;
+  eventJoined: number;
+  eventImages: string[];
+  eventPoints: number;
+  memberId: Types.ObjectId; // Creator (Organization)
+  eventLikes: number;
+  eventViews: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // 2. Input DTO
 export interface EventInput {
-    [x: string]: unknown;
-    eventTitle: string;
-    eventDesc: string;
-    eventLocation: string;
-    eventDate: string; // Passed as string from JSON, converted to Date in logic
-    eventCapacity: number;
-    eventImages?: string[];
-    memberId?: Types.ObjectId; // Usually injected by the server from the token
+  [x: string]: unknown;
+  eventTitle: string;
+  eventDesc: string;
+  eventLocation: string;
+  eventDate: string; // Passed as string from JSON, converted to Date in logic
+  eventCapacity: number;
+  eventImages?: string[];
+  memberId?: Types.ObjectId; // Usually injected by the server from the token
 }
 
 export interface EventInquiry {
-    page: number;
-    limit: number;
-    order?: string;      // 'createdAt' | 'eventDate' | 'eventViews'
-    search?: string;     // For search bar
-    memberId?: Types.ObjectId; // To filter events by a specific Organization
+  page: number;
+  limit: number;
+  order?: string; // 'createdAt' | 'eventDate' | 'eventViews'
+  direction?: "asc" | "desc";
+  search?: string; // For search bar
+  startDate?: Date;
+  endDate?: Date;
+  memberId?: Types.ObjectId; // To filter events by a specific Organization
 }

@@ -90,7 +90,14 @@ class EventService {
       match.eventTitle = { $regex: new RegExp(inquiry.search, "i") };
     if (inquiry.memberId) match.memberId = inquiry.memberId;
 
-    const sort: T = { [inquiry.order || "createdAt"]: -1 };
+    if (inquiry.startDate || inquiry.endDate) {
+      match.eventDate = {};
+      if (inquiry.startDate) match.eventDate.$gte = inquiry.startDate;
+      if (inquiry.endDate) match.eventDate.$lte = inquiry.endDate;
+    }
+
+    const dir = inquiry.direction === "asc" ? 1 : -1;
+    const sort: T = { [inquiry.order || "createdAt"]: dir };
 
     const result = await this.eventModel
       .aggregate([
