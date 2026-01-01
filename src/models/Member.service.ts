@@ -320,6 +320,7 @@ class MemberService {
           $match: {
             memberType: MemberType.ORG,
             memberStatus: MemberStatus.ACTIVE,
+            isVerified: true,
           },
         },
         {
