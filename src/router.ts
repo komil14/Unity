@@ -5,6 +5,7 @@ import applicationController from "./controllers/application.controller";
 import boardController from "./controllers/board.controller";
 import commentController from "./controllers/comment.controller";
 import likeController from "./controllers/like.controller";
+import groupController from "./controllers/group.controller";
 import makeUploader from "./libs/utils/uploader";
 
 const router = express.Router();
@@ -13,6 +14,14 @@ const router = express.Router();
 router.post("/member/signup", memberController.signup);
 router.post("/member/login", memberController.login);
 router.get("/member/check-auth", memberController.checkAuth);
+
+/** ORGANIZER ROUTES */
+router.get("/organizer/all", memberController.getOrganizers);
+router.get(
+  "/organizer/detail/:id",
+  memberController.retrieveAuth,
+  memberController.getOrganizer
+);
 
 /** EVENT ROUTES */
 router.post(
@@ -27,6 +36,36 @@ router.get(
   "/event/detail/:id",
   memberController.retrieveAuth,
   eventController.getEvent
+);
+
+/** GROUP ROUTES */
+router.post(
+  "/group/create",
+  memberController.verifyAuth,
+  makeUploader("groups").single("groupImage"),
+  groupController.createGroup
+);
+router.post(
+  "/group/update",
+  memberController.verifyAuth,
+  makeUploader("groups").single("groupImage"),
+  groupController.updateGroup
+);
+router.get("/group/all", groupController.getGroups);
+router.get(
+  "/group/detail/:id",
+  memberController.retrieveAuth,
+  groupController.getGroup
+);
+router.post(
+  "/group/join",
+  memberController.verifyAuth,
+  groupController.joinGroup
+);
+router.get(
+  "/group/my",
+  memberController.verifyAuth,
+  groupController.getMyGroups
 );
 
 /** APPLICATION ROUTES */

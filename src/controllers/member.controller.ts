@@ -3,7 +3,7 @@ import { T } from "../libs/types/common";
 import MemberService from "../models/Member.service";
 import AuthService from "../models/Auth.service";
 import { MemberInput, LoginInput, AdminRequest } from "../libs/types/member";
-import { MemberType } from "../libs/enums/member.enum";
+import { MemberStatus, MemberType } from "../libs/enums/member.enum";
 import { AUTH_TIMER } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 
@@ -173,6 +173,46 @@ memberController.checkAuth = async (req: AdminRequest, res: Response) => {
       res
         .status(HttpCode.UNAUTHORIZED)
         .json({ message: Message.NOT_AUTHENTICATED });
+  }
+};
+
+/** GET: Organizers (ORG accounts) */
+memberController.getOrganizers = async (req: Request, res: Response) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const order = req.query.order ? String(req.query.order) : "createdAt";
+    const search = req.query.search ? String(req.query.search) : undefined;
+
+    const result = await memberService.getOrganizers({
+      page,
+      limit,
+      order,
+      search,
+      onlyActive: true,
+    });
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, getOrganizers:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
+/** GET: Organizer detail (+ organized events/groups) */
+memberController.getOrganizer = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const viewerId = req.member?._id ?? null;
+    const result = await memberService.getOrganizerDetail(viewerId, id);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, getOrganizer:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
   }
 };
 

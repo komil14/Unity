@@ -1,15 +1,27 @@
 import MemberModel from "../schemas/Member.schema";
+import EventModel from "../schemas/Event.schema";
+import GroupModel from "../schemas/Group.schema";
 import { LoginInput, Member, MemberInput } from "../libs/types/member";
 import Errors, { Message, HttpCode } from "../libs/Errors";
 import { MemberStatus, MemberType } from "../libs/enums/member.enum";
 import * as bcrypt from "bcryptjs";
 import { Types } from "mongoose";
+import ViewService from "./View.service";
+import { ViewGroup } from "../libs/enums/view.enum";
+import { EventStatus } from "../libs/enums/event.enum";
+import { GroupStatus } from "../libs/enums/group.enum";
 
 class MemberService {
   private readonly memberModel;
+  private readonly eventModel;
+  private readonly groupModel;
+  private readonly viewService;
 
   constructor() {
     this.memberModel = MemberModel;
+    this.eventModel = EventModel;
+    this.groupModel = GroupModel;
+    this.viewService = new ViewService();
   }
 
   /**
@@ -182,6 +194,112 @@ class MemberService {
     });
 
     return { total, active, blocked, pending, newUsers };
+  }
+
+  /** SPA: Get Organizers (ORG accounts) */
+  public async getOrganizers(inquiry: {
+    page: number;
+    limit: number;
+    order?: string;
+    search?: string;
+    onlyActive?: boolean;
+  }): Promise<any[]> {
+    const match: any = { memberType: MemberType.ORG };
+    if (inquiry.onlyActive) match.memberStatus = MemberStatus.ACTIVE;
+    if (inquiry.search)
+      match.memberNick = { $regex: new RegExp(inquiry.search, "i") };
+
+    const sort: any = { [inquiry.order || "createdAt"]: -1 };
+
+    // Provide counts similar to eventify (events/groups organized)
+    const result = await this.memberModel
+      .aggregate([
+        { $match: match },
+        { $sort: sort },
+        { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
+        { $limit: inquiry.limit * 1 },
+        {
+          $lookup: {
+            from: "events",
+            localField: "_id",
+            foreignField: "memberId",
+            as: "organizedEvents",
+          },
+        },
+        {
+          $lookup: {
+            from: "groups",
+            localField: "_id",
+            foreignField: "memberId",
+            as: "organizedGroups",
+          },
+        },
+        {
+          $addFields: {
+            eventsOrganizedCount: { $size: "$organizedEvents" },
+            groupsOrganizedCount: { $size: "$organizedGroups" },
+          },
+        },
+        {
+          $project: {
+            organizedEvents: 0,
+            organizedGroups: 0,
+            memberPassword: 0,
+          },
+        },
+      ])
+      .exec();
+
+    return result;
+  }
+
+  /** SPA: Get Organizer detail (+ view counting + organized events/groups) */
+  public async getOrganizerDetail(
+    viewerId: Types.ObjectId | null,
+    organizerId: string
+  ): Promise<any> {
+    const member = await this.memberModel.findById(organizerId).exec();
+    if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (member.memberType !== MemberType.ORG)
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    // View counting (only for logged-in viewers)
+    if (viewerId) {
+      const newView = await this.viewService.insertMemberView({
+        memberId: viewerId,
+        viewRefId: member._id,
+        viewGroup: ViewGroup.MEMBER,
+      });
+
+      if (newView) {
+        await this.memberModel
+          .findByIdAndUpdate(organizerId, { $inc: { memberViews: 1 } })
+          .exec();
+      }
+    }
+
+    const memberJson = member.toJSON() as any;
+    delete memberJson.memberPassword;
+
+    const organizedEvents = await this.eventModel
+      .find({ memberId: member._id, eventStatus: EventStatus.ACTIVE })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .exec();
+
+    const organizedGroups = await this.groupModel
+      .find({ memberId: member._id, groupStatus: GroupStatus.ACTIVE })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .exec();
+
+    return {
+      ...memberJson,
+      eventsOrganizedCount: organizedEvents.length,
+      groupsOrganizedCount: organizedGroups.length,
+      organizedEvents: organizedEvents.map((e: any) => e.toJSON()),
+      organizedGroups: organizedGroups.map((g: any) => g.toJSON()),
+    };
   }
 }
 
