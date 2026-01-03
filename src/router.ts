@@ -32,6 +32,7 @@ router.post(
   eventController.createEvent
 );
 router.get("/event/all", eventController.getEvents);
+router.get("/event/popular-weekly", eventController.getWeeklyPopularEvents);
 // New Detail Route with View Counting
 router.get(
   "/event/detail/:id",

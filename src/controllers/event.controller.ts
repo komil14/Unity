@@ -115,4 +115,23 @@ eventController.getEvent = async (req: AdminRequest, res: Response) => {
   }
 };
 
+/** GET: Weekly Popular Events (by % volunteers applied) */
+eventController.getWeeklyPopularEvents = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const days = req.query.days ? Number(req.query.days) : 7;
+    const limit = req.query.limit ? Number(req.query.limit) : 4;
+
+    const result = await eventService.getWeeklyPopularEvents({ days, limit });
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, getWeeklyPopularEvents:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 export default eventController;

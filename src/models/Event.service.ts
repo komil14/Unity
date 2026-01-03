@@ -1,4 +1,6 @@
 import EventModel from "../schemas/Event.schema";
+import ApplicationModel from "../schemas/Application.schema";
+import MemberModel from "../schemas/Member.schema";
 import ViewService from "./View.service";
 import { EventStatus } from "../libs/enums/event.enum";
 import { ViewGroup } from "../libs/enums/view.enum";
@@ -7,13 +9,18 @@ import Errors, { HttpCode, Message } from "../libs/Errors";
 import { Event, EventInput, EventInquiry } from "../libs/types/event";
 import { T } from "../libs/types/common";
 import { Types } from "mongoose";
+import { MemberStatus, MemberType } from "../libs/enums/member.enum";
 
 class EventService {
   private readonly eventModel;
+  private readonly applicationModel;
+  private readonly memberModel;
   private readonly viewService;
 
   constructor() {
     this.eventModel = EventModel;
+    this.applicationModel = ApplicationModel;
+    this.memberModel = MemberModel;
     this.viewService = new ViewService();
   }
 
@@ -128,6 +135,112 @@ class EventService {
     });
 
     return sanitizedResult as unknown as Event[];
+  }
+
+  /**
+   * Get weekly-popular events: ranked by % of volunteers who applied in the last N days.
+   * weeklyApplyRate = weeklyApplicants / totalVolunteers * 100
+   */
+  public async getWeeklyPopularEvents(input?: {
+    days?: number;
+    limit?: number;
+  }): Promise<any[]> {
+    const daysRaw = input?.days ?? 7;
+    const limitRaw = input?.limit ?? 4;
+
+    const days = Number.isFinite(daysRaw)
+      ? Math.max(1, Math.min(30, Math.floor(daysRaw)))
+      : 7;
+    const limit = Number.isFinite(limitRaw)
+      ? Math.max(1, Math.min(20, Math.floor(limitRaw)))
+      : 4;
+
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const totalVolunteers = await this.memberModel.countDocuments({
+      memberType: MemberType.USER,
+      memberStatus: MemberStatus.ACTIVE,
+    });
+
+    const agg = await this.applicationModel
+      .aggregate([
+        { $match: { createdAt: { $gte: since } } },
+        {
+          $group: {
+            _id: "$eventId",
+            weeklyApplicants: { $sum: 1 },
+          },
+        },
+        { $sort: { weeklyApplicants: -1 } },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "events",
+            localField: "_id",
+            foreignField: "_id",
+            as: "event",
+          },
+        },
+        { $unwind: "$event" },
+        { $match: { "event.eventStatus": EventStatus.ACTIVE } },
+        {
+          $lookup: {
+            from: "members",
+            localField: "event.memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        { $unwind: "$memberData" },
+        {
+          $addFields: {
+            weeklyApplyRate: {
+              $cond: [
+                { $gt: [totalVolunteers, 0] },
+                {
+                  $multiply: [
+                    { $divide: ["$weeklyApplicants", totalVolunteers] },
+                    100,
+                  ],
+                },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $project: {
+            _id: "$event._id",
+            eventTitle: "$event.eventTitle",
+            eventDesc: "$event.eventDesc",
+            eventLocation: "$event.eventLocation",
+            eventDate: "$event.eventDate",
+            eventCapacity: "$event.eventCapacity",
+            eventJoined: "$event.eventJoined",
+            eventImages: "$event.eventImages",
+            eventPoints: "$event.eventPoints",
+            memberId: "$event.memberId",
+            eventLikes: "$event.eventLikes",
+            eventViews: "$event.eventViews",
+            createdAt: "$event.createdAt",
+            updatedAt: "$event.updatedAt",
+            memberData: 1,
+            weeklyApplicants: 1,
+            weeklyApplyRate: 1,
+          },
+        },
+        { $sort: { weeklyApplyRate: -1, weeklyApplicants: -1 } },
+      ])
+      .exec();
+
+    const sanitized = (agg ?? []).map((event: any) => {
+      if (event.eventImages) {
+        event.eventImages = this.sanitizeImagePaths(event.eventImages);
+      }
+      return event;
+    });
+
+    return sanitized;
   }
 
   /** BSSR: Get All Events (For Admin) */
