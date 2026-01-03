@@ -181,11 +181,19 @@ memberController.getOrganizers = async (req: Request, res: Response) => {
     const limit = Number(req.query.limit) || 10;
     const order = req.query.order ? String(req.query.order) : "createdAt";
     const search = req.query.search ? String(req.query.search) : undefined;
+    const directionRaw = req.query.direction
+      ? String(req.query.direction)
+      : undefined;
+    const direction =
+      directionRaw === "asc" || directionRaw === "desc"
+        ? directionRaw
+        : undefined;
 
     const result = await memberService.getOrganizers({
       page,
       limit,
       order,
+      direction,
       search,
       onlyActive: true,
     });

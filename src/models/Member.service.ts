@@ -209,6 +209,7 @@ class MemberService {
     page: number;
     limit: number;
     order?: string;
+    direction?: "asc" | "desc";
     search?: string;
     onlyActive?: boolean;
   }): Promise<any[]> {
@@ -217,7 +218,8 @@ class MemberService {
     if (inquiry.search)
       match.memberNick = { $regex: new RegExp(inquiry.search, "i") };
 
-    const sort: any = { [inquiry.order || "createdAt"]: -1 };
+    const dir = inquiry.direction === "asc" ? 1 : -1;
+    const sort: any = { [inquiry.order || "createdAt"]: dir };
 
     // Provide counts similar to eventify (events/groups organized)
     const result = await this.memberModel
@@ -271,7 +273,9 @@ class MemberService {
     if (member.memberType !== MemberType.ORG)
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    // View counting (only for logged-in viewers)
+    // View counting
+    // - Logged-in viewers: count once per viewer (unique) via View collection
+    // - Anonymous viewers: count every visit (no stable identity)
     if (viewerId) {
       const newView = await this.viewService.insertMemberView({
         memberId: viewerId,
@@ -283,7 +287,13 @@ class MemberService {
         await this.memberModel
           .findByIdAndUpdate(organizerId, { $inc: { memberViews: 1 } })
           .exec();
+        member.memberViews = (member.memberViews ?? 0) + 1;
       }
+    } else {
+      await this.memberModel
+        .findByIdAndUpdate(organizerId, { $inc: { memberViews: 1 } })
+        .exec();
+      member.memberViews = (member.memberViews ?? 0) + 1;
     }
 
     const memberJson = member.toJSON() as any;
