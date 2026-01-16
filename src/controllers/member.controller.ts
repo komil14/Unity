@@ -222,6 +222,21 @@ memberController.getOrganizer = async (req: AdminRequest, res: Response) => {
   }
 };
 
+/** POST: Organizer view (+1 memberViews) */
+memberController.viewOrganizer = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const viewerId = req.member?._id ?? null;
+    const memberViews = await memberService.viewOrganizer(viewerId, id);
+    res.status(200).json({ memberViews });
+  } catch (err: any) {
+    console.log("Error, viewOrganizer:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 /** GET: Top Organizers (ranked) */
 memberController.getTopOrganizers = async (req: Request, res: Response) => {
   try {

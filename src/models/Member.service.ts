@@ -263,7 +263,7 @@ class MemberService {
     return result;
   }
 
-  /** SPA: Get Organizer detail (+ view counting + organized events/groups) */
+  /** SPA: Get Organizer detail (+ organized events/groups) */
   public async getOrganizerDetail(
     viewerId: Types.ObjectId | null,
     organizerId: string
@@ -272,29 +272,6 @@ class MemberService {
     if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     if (member.memberType !== MemberType.ORG)
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-
-    // View counting
-    // - Logged-in viewers: count once per viewer (unique) via View collection
-    // - Anonymous viewers: count every visit (no stable identity)
-    if (viewerId) {
-      const newView = await this.viewService.insertMemberView({
-        memberId: viewerId,
-        viewRefId: member._id,
-        viewGroup: ViewGroup.MEMBER,
-      });
-
-      if (newView) {
-        await this.memberModel
-          .findByIdAndUpdate(organizerId, { $inc: { memberViews: 1 } })
-          .exec();
-        member.memberViews = (member.memberViews ?? 0) + 1;
-      }
-    } else {
-      await this.memberModel
-        .findByIdAndUpdate(organizerId, { $inc: { memberViews: 1 } })
-        .exec();
-      member.memberViews = (member.memberViews ?? 0) + 1;
-    }
 
     const memberJson = member.toJSON() as any;
     delete memberJson.memberPassword;
@@ -318,6 +295,47 @@ class MemberService {
       organizedEvents: organizedEvents.map((e: any) => e.toJSON()),
       organizedGroups: organizedGroups.map((g: any) => g.toJSON()),
     };
+  }
+
+  /** SPA: Increment organizer views and return the updated count */
+  public async viewOrganizer(
+    viewerId: Types.ObjectId | null,
+    organizerId: string
+  ): Promise<number> {
+    const member = await this.memberModel.findById(organizerId).exec();
+    if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (member.memberType !== MemberType.ORG)
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    // Do not count self-views
+    if (viewerId && String(viewerId) === String(member._id)) {
+      return member.memberViews ?? 0;
+    }
+
+    // Logged-in viewers: unique per viewer via View collection
+    if (viewerId) {
+      const newView = await this.viewService.insertMemberView({
+        memberId: viewerId,
+        viewRefId: member._id,
+        viewGroup: ViewGroup.MEMBER,
+      });
+
+      if (!newView) {
+        return member.memberViews ?? 0;
+      }
+    }
+
+    const updated = await this.memberModel
+      .findByIdAndUpdate(
+        organizerId,
+        { $inc: { memberViews: 1 } },
+        { new: true }
+      )
+      .select({ memberViews: 1 })
+      .lean()
+      .exec();
+
+    return (updated as any)?.memberViews ?? (member.memberViews ?? 0) + 1;
   }
 
   /** SPA: Get Top Organizers (ranked by engagement + output) */
