@@ -185,6 +185,23 @@ memberController.checkAuth = async (req: AdminRequest, res: Response) => {
   }
 };
 
+memberController.updateProfile = async (req: AdminRequest, res: Response) => {
+  try {
+    const payload: any = { ...req.body };
+    if (req.file) {
+      payload.memberImage = (req.file as any).filename;
+    }
+
+    const updated = await memberService.updateProfile(req.member._id, payload);
+    res.status(200).json(updated);
+  } catch (err: any) {
+    console.log("Error, updateProfile:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.UPDATE_FAILED });
+  }
+};
+
 /** GET: Organizers (ORG accounts) */
 memberController.getOrganizers = async (req: Request, res: Response) => {
   try {

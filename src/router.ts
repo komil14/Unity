@@ -15,6 +15,18 @@ router.post("/member/signup", memberController.signup);
 router.post("/member/login", memberController.login);
 router.get("/member/check-auth", memberController.checkAuth);
 router.post("/member/logout", memberController.logout);
+router.put(
+  "/member/profile",
+  memberController.verifyAuth,
+  makeUploader("members").single("memberImage"),
+  memberController.updateProfile
+);
+router.post(
+  "/member/update",
+  memberController.verifyAuth,
+  makeUploader("members").single("memberImage"),
+  memberController.updateProfile
+);
 
 /** ORGANIZER ROUTES */
 router.get("/organizer/all", memberController.getOrganizers);

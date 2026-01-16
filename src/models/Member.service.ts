@@ -3,7 +3,12 @@ import EventModel from "../schemas/Event.schema";
 import GroupModel from "../schemas/Group.schema";
 import BoardModel from "../schemas/Board.schema";
 import CommentModel from "../schemas/Comment.schema";
-import { LoginInput, Member, MemberInput } from "../libs/types/member";
+import {
+  LoginInput,
+  Member,
+  MemberInput,
+  MemberUpdateInput,
+} from "../libs/types/member";
 import Errors, { Message, HttpCode } from "../libs/Errors";
 import { MemberStatus, MemberType } from "../libs/enums/member.enum";
 import * as bcrypt from "bcryptjs";
@@ -179,6 +184,63 @@ class MemberService {
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
     return result.toJSON() as unknown as Member;
+  }
+
+  /** SPA: Update own profile */
+  public async updateProfile(
+    memberId: Types.ObjectId,
+    input: MemberUpdateInput
+  ): Promise<Member> {
+    const payload: any = {};
+    const allowedFields: Array<keyof MemberUpdateInput> = [
+      "memberNick",
+      "memberPhone",
+      "memberAddress",
+      "memberDesc",
+      "memberImage",
+    ];
+
+    for (const field of allowedFields) {
+      if (input[field] !== undefined) {
+        payload[field] = input[field];
+      }
+    }
+
+    if (Object.keys(payload).length === 0) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
+    }
+
+    // Enforce uniqueness when user changes nick or phone
+    if (payload.memberNick) {
+      const duplicateNick = await this.memberModel
+        .findOne({ memberNick: payload.memberNick, _id: { $ne: memberId } })
+        .select({ _id: 1 })
+        .lean()
+        .exec();
+      if (duplicateNick)
+        throw new Errors(HttpCode.CONFLICT, Message.UPDATE_FAILED);
+    }
+
+    if (payload.memberPhone) {
+      const duplicatePhone = await this.memberModel
+        .findOne({ memberPhone: payload.memberPhone, _id: { $ne: memberId } })
+        .select({ _id: 1 })
+        .lean()
+        .exec();
+      if (duplicatePhone)
+        throw new Errors(HttpCode.CONFLICT, Message.UPDATE_FAILED);
+    }
+
+    const result = await this.memberModel
+      .findByIdAndUpdate(memberId, { $set: payload }, { new: true })
+      .exec();
+
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    const json = result.toJSON();
+    delete (json as any).memberPassword;
+
+    return json as unknown as Member;
   }
 
   /** BSSR: Get Stats */
