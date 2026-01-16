@@ -78,6 +78,17 @@ memberController.login = async (req: Request, res: Response) => {
   }
 };
 
+/** SPA: Logout */
+memberController.logout = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("accessToken");
+    res.status(200).json({ ok: true });
+  } catch (err: any) {
+    console.log("Error, logout:", err);
+    res.status(200).json({ ok: true });
+  }
+};
+
 /** * MIDDLEWARE: Verify Auth (Strict)
  * Throws error if not logged in. Used for Creating/Updating content.
  */

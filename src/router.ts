@@ -14,6 +14,7 @@ const router = express.Router();
 router.post("/member/signup", memberController.signup);
 router.post("/member/login", memberController.login);
 router.get("/member/check-auth", memberController.checkAuth);
+router.post("/member/logout", memberController.logout);
 
 /** ORGANIZER ROUTES */
 router.get("/organizer/all", memberController.getOrganizers);
