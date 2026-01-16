@@ -83,8 +83,41 @@ class EventService {
       }
     }
 
+    // Use aggregation to populate memberData (organizer info)
+    const eventWithMember = await this.eventModel
+      .aggregate([
+        { $match: { _id: event._id } },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        { $unwind: "$memberData" },
+        {
+          $project: {
+            "memberData.memberPassword": 0,
+          },
+        },
+      ])
+      .exec();
+
+    if (!eventWithMember || eventWithMember.length === 0) {
+      // Fallback: return event without memberData
+      const eventData = event.toJSON() as unknown as Event;
+      if (eventData.eventImages) {
+        eventData.eventImages = this.sanitizeImagePaths(eventData.eventImages);
+      }
+      return eventData;
+    }
+
+    const eventData = eventWithMember[0] as any;
+    // Update view count in the response
+    eventData.eventViews = event.eventViews;
+
     // Sanitize image paths before returning
-    const eventData = event.toJSON() as unknown as Event;
     if (eventData.eventImages) {
       eventData.eventImages = this.sanitizeImagePaths(eventData.eventImages);
     }
