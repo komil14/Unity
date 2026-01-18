@@ -9,8 +9,12 @@ import { v4 as uuidv4 } from "uuid";
 function getTargetImageStorage(folderName: string) {
   return multer.diskStorage({
     destination: function (req, file, cb) {
-      // Define where the file goes: uploads/{folderName} at project root
-      const uploadPath = path.join(__dirname, "../../../uploads", folderName);
+      // Define where the file goes: Unity/uploads/{folderName} (outside backend folder)
+      const uploadPath = path.join(
+        __dirname,
+        "../../../../uploads",
+        folderName
+      );
       cb(null, uploadPath);
     },
     filename: function (req, file, cb) {

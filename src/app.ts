@@ -15,7 +15,7 @@ const app = express();
 
 /** 1. MIDDLEWARE **/
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../..", "uploads")));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors({ credentials: true, origin: true }));
