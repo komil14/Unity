@@ -201,8 +201,15 @@ class MemberService {
     ];
 
     for (const field of allowedFields) {
-      if (input[field] !== undefined) {
-        payload[field] = input[field];
+      if (
+        input[field] !== undefined &&
+        input[field] !== null &&
+        input[field] !== ""
+      ) {
+        const value = String(input[field]).trim();
+        if (value) {
+          payload[field] = value;
+        }
       }
     }
 
@@ -222,11 +229,18 @@ class MemberService {
     }
 
     if (payload.memberPhone) {
+      console.log(
+        "Checking duplicate phone:",
+        payload.memberPhone,
+        "for memberId:",
+        memberId
+      );
       const duplicatePhone = await this.memberModel
         .findOne({ memberPhone: payload.memberPhone, _id: { $ne: memberId } })
         .select({ _id: 1 })
         .lean()
         .exec();
+      console.log("Duplicate phone result:", duplicatePhone);
       if (duplicatePhone)
         throw new Errors(HttpCode.CONFLICT, Message.UPDATE_FAILED);
     }

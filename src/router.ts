@@ -15,14 +15,14 @@ router.post("/member/signup", memberController.signup);
 router.post("/member/login", memberController.login);
 router.get("/member/check-auth", memberController.checkAuth);
 router.post("/member/logout", memberController.logout);
-router.put(
+router.post(
   "/member/profile",
   memberController.verifyAuth,
   makeUploader("members").single("memberImage"),
   memberController.updateProfile
 );
 router.post(
-  "/member/update",
+  "/member/profile",
   memberController.verifyAuth,
   makeUploader("members").single("memberImage"),
   memberController.updateProfile

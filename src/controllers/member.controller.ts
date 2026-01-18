@@ -187,12 +187,31 @@ memberController.checkAuth = async (req: AdminRequest, res: Response) => {
 
 memberController.updateProfile = async (req: AdminRequest, res: Response) => {
   try {
+    console.log("UpdateProfile Body:", req.body);
+    if (!req.member) {
+      throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    }
+
+    console.log("UpdateProfile - req.member._id:", req.member._id);
     const payload: any = { ...req.body };
     if (req.file) {
       payload.memberImage = (req.file as any).filename;
     }
 
+    console.log("UpdateProfile Payload:", payload);
     const updated = await memberService.updateProfile(req.member._id, payload);
+    console.log("UpdateProfile Result:", updated);
+
+    // Generate new token with updated member data
+    const newToken = await authService.createToken(updated);
+    console.log("UpdateProfile - New token created");
+
+    // Set the new token in cookie
+    res.cookie("accessToken", newToken, {
+      maxAge: AUTH_TIMER * 3600 * 1000,
+      httpOnly: false,
+    });
+
     res.status(200).json(updated);
   } catch (err: any) {
     console.log("Error, updateProfile:", err);
