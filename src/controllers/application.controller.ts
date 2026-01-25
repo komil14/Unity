@@ -82,4 +82,56 @@ applicationController.getEventAttendees = async (
   }
 };
 
+/**
+ * GET /application/check/:eventId
+ * Returns user's application for the event (if any)
+ */
+applicationController.getApplicationStatus = async (
+  req: AdminRequest,
+  res: Response,
+) => {
+  try {
+    const eventId = req.params.eventId;
+    const memberId = req.member._id;
+
+    const application = await applicationService.getApplicationStatus(
+      memberId,
+      eventId,
+    );
+
+    res.status(200).json(application);
+  } catch (err: any) {
+    console.log("Error, getApplicationStatus:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
+/**
+ * POST /application/cancel/:eventId
+ * Cancel current user's application for the event
+ */
+applicationController.cancelApplication = async (
+  req: AdminRequest,
+  res: Response,
+) => {
+  try {
+    const eventId = req.params.eventId;
+    const memberId = req.member._id;
+
+    const result = await applicationService.cancelApplication(
+      memberId,
+      eventId,
+    );
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, cancelApplication:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 export default applicationController;

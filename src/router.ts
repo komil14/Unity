@@ -100,6 +100,16 @@ router.get(
   applicationController.getMyApplications,
 );
 router.get(
+  "/application/check/:eventId",
+  memberController.verifyAuth,
+  applicationController.getApplicationStatus,
+);
+router.post(
+  "/application/cancel/:eventId",
+  memberController.verifyAuth,
+  applicationController.cancelApplication,
+);
+router.get(
   "/event/:id/attendees",
   memberController.retrieveAuth,
   applicationController.getEventAttendees,

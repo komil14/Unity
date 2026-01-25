@@ -80,6 +80,59 @@ class ApplicationService {
   }
 
   /**
+   * Get current user's application status for an event
+   */
+  public async getApplicationStatus(
+    memberId: any,
+    eventId: any,
+  ): Promise<any | null> {
+    const memberObjectId =
+      typeof memberId === "string" ? new Types.ObjectId(memberId) : memberId;
+    const eventObjectId =
+      typeof eventId === "string" ? new Types.ObjectId(eventId) : eventId;
+
+    const application = await this.applicationModel
+      .findOne({ memberId: memberObjectId, eventId: eventObjectId })
+      .exec();
+
+    return application ? application.toJSON() : null;
+  }
+
+  /**
+   * Cancel/withdraw an application (user-owned)
+   */
+  public async cancelApplication(
+    memberId: any,
+    eventId: any,
+  ): Promise<any> {
+    const memberObjectId =
+      typeof memberId === "string" ? new Types.ObjectId(memberId) : memberId;
+    const eventObjectId =
+      typeof eventId === "string" ? new Types.ObjectId(eventId) : eventId;
+
+    const application = await this.applicationModel
+      .findOneAndUpdate(
+        {
+          memberId: memberObjectId,
+          eventId: eventObjectId,
+          applicationStatus: { $ne: ApplicationStatus.CANCELED },
+        },
+        { applicationStatus: ApplicationStatus.CANCELED },
+        { new: true },
+      )
+      .exec();
+
+    if (!application) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    // Decrement eventJoined count, not below zero
+    await this.eventModel
+      .findByIdAndUpdate(eventObjectId, { $inc: { eventJoined: -1 } })
+      .exec();
+
+    return application.toJSON();
+  }
+
+  /**
    * Get attendees for an event (approved applications)
    */
   public async getEventAttendees(eventId: string, limit = 12): Promise<any[]> {
