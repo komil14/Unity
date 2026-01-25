@@ -19,12 +19,20 @@ class ApplicationService {
    * Process Application (User Joins Event)
    */
   public async createApplication(input: ApplicationInput): Promise<any> {
-    // 1. Check: Did user already apply?
+    // 1. Check if any application exists (active or canceled)
     const exist = await this.applicationModel
-      .findOne({ memberId: input.memberId, eventId: input.eventId })
+      .findOne({
+        memberId: input.memberId,
+        eventId: input.eventId,
+      })
       .exec();
 
-    if (exist) {
+    // If there's an active application (PENDING/APPROVED), block it
+    if (
+      exist &&
+      (exist.applicationStatus === ApplicationStatus.PENDING ||
+        exist.applicationStatus === ApplicationStatus.APPROVED)
+    ) {
       throw new Errors(HttpCode.CONFLICT, Message.CREATE_FAILED); // "Already Joined"
     }
 
@@ -37,8 +45,29 @@ class ApplicationService {
     }
 
     try {
-      // 3. Create Application
-      const result = await this.applicationModel.create(input);
+      let result;
+
+      // If a canceled/rejected application exists, reactivate it
+      if (
+        exist &&
+        (exist.applicationStatus === ApplicationStatus.CANCELED ||
+          exist.applicationStatus === ApplicationStatus.REJECTED)
+      ) {
+        result = await this.applicationModel
+          .findByIdAndUpdate(
+            exist._id,
+            {
+              applicationStatus: ApplicationStatus.PENDING,
+              applicationNote: input.applicationNote || exist.applicationNote,
+              updatedAt: new Date(),
+            },
+            { new: true },
+          )
+          .exec();
+      } else {
+        // 3. Create new Application if no previous record exists
+        result = await this.applicationModel.create(input);
+      }
 
       // 4. Update Event: Increment participant count (+1)
       await this.eventModel
@@ -101,10 +130,7 @@ class ApplicationService {
   /**
    * Cancel/withdraw an application (user-owned)
    */
-  public async cancelApplication(
-    memberId: any,
-    eventId: any,
-  ): Promise<any> {
+  public async cancelApplication(memberId: any, eventId: any): Promise<any> {
     const memberObjectId =
       typeof memberId === "string" ? new Types.ObjectId(memberId) : memberId;
     const eventObjectId =
@@ -122,7 +148,8 @@ class ApplicationService {
       )
       .exec();
 
-    if (!application) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (!application)
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
     // Decrement eventJoined count, not below zero
     await this.eventModel
