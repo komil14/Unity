@@ -22,12 +22,14 @@ eventController.createEvent = async (req: AdminRequest, res: Response) => {
 
     const input: EventInput = req.body;
 
-    // Image Handling - store only filename so views can build `/uploads/<folder>/<filename>` URLs
-    if (!req.file)
+    // Image Handling - store only filenames so views can build `/uploads/<folder>/<filename>` URLs
+    if (!req.files || (Array.isArray(req.files) && req.files.length === 0))
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
-    const filename =
-      (req.file as any).filename || path.basename((req.file as any).path || "");
-    input.eventImages = [filename];
+
+    const filenames = (req.files as Express.Multer.File[]).map(
+      (file) => file.filename || path.basename(file.path || ""),
+    );
+    input.eventImages = filenames;
 
     // Inject Creator
     input.memberId = req.member._id;
@@ -118,7 +120,7 @@ eventController.getEvent = async (req: AdminRequest, res: Response) => {
 /** GET: Weekly Popular Events (by % volunteers applied) */
 eventController.getWeeklyPopularEvents = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const days = req.query.days ? Number(req.query.days) : 7;

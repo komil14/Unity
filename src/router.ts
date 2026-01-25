@@ -19,13 +19,13 @@ router.post(
   "/member/profile",
   memberController.verifyAuth,
   makeUploader("members").single("memberImage"),
-  memberController.updateProfile
+  memberController.updateProfile,
 );
 router.post(
   "/member/profile",
   memberController.verifyAuth,
   makeUploader("members").single("memberImage"),
-  memberController.updateProfile
+  memberController.updateProfile,
 );
 
 /** ORGANIZER ROUTES */
@@ -34,20 +34,20 @@ router.get("/organizer/top", memberController.getTopOrganizers);
 router.post(
   "/organizer/view/:id",
   memberController.retrieveAuth,
-  memberController.viewOrganizer
+  memberController.viewOrganizer,
 );
 router.get(
   "/organizer/detail/:id",
   memberController.retrieveAuth,
-  memberController.getOrganizer
+  memberController.getOrganizer,
 );
 
 /** EVENT ROUTES */
 router.post(
   "/event/create",
   memberController.verifyAuth,
-  makeUploader("events").single("eventImage"),
-  eventController.createEvent
+  makeUploader("events").array("eventImages", 5),
+  eventController.createEvent,
 );
 router.get("/event/all", eventController.getEvents);
 router.get("/event/popular-weekly", eventController.getWeeklyPopularEvents);
@@ -55,7 +55,7 @@ router.get("/event/popular-weekly", eventController.getWeeklyPopularEvents);
 router.get(
   "/event/detail/:id",
   memberController.retrieveAuth,
-  eventController.getEvent
+  eventController.getEvent,
 );
 
 /** GROUP ROUTES */
@@ -63,41 +63,41 @@ router.post(
   "/group/create",
   memberController.verifyAuth,
   makeUploader("groups").single("groupImage"),
-  groupController.createGroup
+  groupController.createGroup,
 );
 router.post(
   "/group/update",
   memberController.verifyAuth,
   makeUploader("groups").single("groupImage"),
-  groupController.updateGroup
+  groupController.updateGroup,
 );
 router.get("/group/all", groupController.getGroups);
 router.get(
   "/group/detail/:id",
   memberController.retrieveAuth,
-  groupController.getGroup
+  groupController.getGroup,
 );
 router.post(
   "/group/join",
   memberController.verifyAuth,
-  groupController.joinGroup
+  groupController.joinGroup,
 );
 router.get(
   "/group/my",
   memberController.verifyAuth,
-  groupController.getMyGroups
+  groupController.getMyGroups,
 );
 
 /** APPLICATION ROUTES */
 router.post(
   "/application/join",
   memberController.verifyAuth,
-  applicationController.joinEvent
+  applicationController.joinEvent,
 );
 router.get(
   "/application/my",
   memberController.verifyAuth,
-  applicationController.getMyApplications
+  applicationController.getMyApplications,
 );
 
 /** BOARD ROUTES */
@@ -105,21 +105,21 @@ router.post(
   "/board/create",
   memberController.verifyAuth,
   makeUploader("community").single("boardImage"),
-  boardController.createBoard
+  boardController.createBoard,
 );
 router.get("/board/all", boardController.getBoards);
 // New Detail Route with View Counting
 router.get(
   "/board/detail/:id",
   memberController.retrieveAuth,
-  boardController.getBoard
+  boardController.getBoard,
 );
 
 /** COMMENT ROUTES */
 router.post(
   "/comment/create",
   memberController.verifyAuth,
-  commentController.createComment
+  commentController.createComment,
 );
 router.get("/comment/all", commentController.getComments);
 
@@ -127,13 +127,13 @@ router.get("/comment/all", commentController.getComments);
 router.post(
   "/like/toggle",
   memberController.verifyAuth,
-  likeController.toggleLike
+  likeController.toggleLike,
 );
 
 router.post(
   "/like/exists-batch",
   memberController.retrieveAuth,
-  likeController.checkLikesBatch
+  likeController.checkLikesBatch,
 );
 
 export default router;
