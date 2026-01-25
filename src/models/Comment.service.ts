@@ -1,5 +1,6 @@
 import CommentModel from "../schemas/Comment.schema";
 import BoardModel from "../schemas/Board.schema";
+import EventModel from "../schemas/Event.schema";
 import { CommentInput, CommentInquiry, Comment } from "../libs/types/comment";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { CommentStatus } from "../libs/enums/comment.enum";
@@ -7,15 +8,22 @@ import { CommentStatus } from "../libs/enums/comment.enum";
 class CommentService {
   private readonly commentModel;
   private readonly boardModel;
+  private readonly eventModel;
 
   constructor() {
     this.commentModel = CommentModel;
     this.boardModel = BoardModel;
+    this.eventModel = EventModel;
   }
 
   public async createComment(input: CommentInput): Promise<Comment> {
+    // Verify that the article/event exists (try both models)
     const article = await this.boardModel.findById(input.articleId).exec();
-    if (!article) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    const event = await this.eventModel.findById(input.articleId).exec();
+
+    if (!article && !event) {
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    }
 
     try {
       const result = await this.commentModel.create(input);
@@ -34,7 +42,7 @@ class CommentService {
     const result = await this.commentModel
       .aggregate([
         { $match: match },
-        { $sort: { createdAt: 1 } },
+        { $sort: { createdAt: -1 } },
         { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
         { $limit: inquiry.limit * 1 },
         {
@@ -51,7 +59,6 @@ class CommentService {
     return result as unknown as Comment[];
   }
 
-  /** BSSR: Get All Comments */
   public async getAllCommentsAdmin(): Promise<Comment[]> {
     const result = await this.commentModel
       .aggregate([
@@ -70,14 +77,13 @@ class CommentService {
     return result as unknown as Comment[];
   }
 
-  /** BSSR: Update Comment Status (FIXED) */
   public async updateCommentStatus(input: any): Promise<any> {
     const commentId = input._id;
     const result = await this.commentModel
       .findByIdAndUpdate(
         commentId,
-        { commentStatus: input.commentStatus }, // <-- Explicitly setting the field
-        { new: true }
+        { commentStatus: input.commentStatus },
+        { new: true },
       )
       .exec();
 

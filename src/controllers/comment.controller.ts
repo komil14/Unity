@@ -14,7 +14,7 @@ commentController.createComment = async (req: AdminRequest, res: Response) => {
   try {
     console.log("CreateComment Body:", req.body);
     const input: CommentInput = req.body;
-    
+
     // Inject Member ID
     input.memberId = req.member._id;
 
@@ -22,30 +22,35 @@ commentController.createComment = async (req: AdminRequest, res: Response) => {
     res.status(201).json(result);
   } catch (err: any) {
     console.log("Error, createComment:", err);
-    if (err instanceof Errors) res.status(err.code).json({ message: err.message });
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
     else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
   }
 };
 
-/** GET: List Comments for an Article */
+/** GET: List Comments for an Article or Event */
 commentController.getComments = async (req: any, res: Response) => {
   try {
-    // We expect ?articleId=... in the URL
-    const { articleId, page, limit } = req.query;
-    
-    if (!articleId) throw new Errors(HttpCode.BAD_REQUEST, Message.NO_DATA_FOUND);
+    // Support both ?articleId=... and ?eventId=... query params
+    const { articleId, eventId, page, limit } = req.query;
+
+    const targetId = articleId || eventId;
+    if (!targetId)
+      throw new Errors(HttpCode.BAD_REQUEST, Message.NO_DATA_FOUND);
 
     const inquiry: CommentInquiry = {
-        articleId: new Types.ObjectId(String(articleId)),
-        page: Number(page) || 1,
-        limit: Number(limit) || 10
+      articleId: new Types.ObjectId(String(targetId)),
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      targetType: eventId ? "event" : "article",
     };
 
     const result = await commentService.getComments(inquiry);
     res.status(200).json(result);
   } catch (err: any) {
     console.log("Error, getComments:", err);
-    if (err instanceof Errors) res.status(err.code).json({ message: err.message });
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
     else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
   }
 };
