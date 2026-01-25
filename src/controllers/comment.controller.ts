@@ -55,4 +55,47 @@ commentController.getComments = async (req: any, res: Response) => {
   }
 };
 
+/** PATCH: Update Comment Content (owner only) */
+commentController.updateComment = async (req: AdminRequest, res: Response) => {
+  try {
+    const commentId = req.params.id;
+    const { commentContent } = req.body;
+
+    if (!commentContent)
+      throw new Errors(HttpCode.BAD_REQUEST, Message.NO_DATA_FOUND);
+
+    const result = await commentService.updateCommentContent(
+      commentId,
+      String(req.member._id),
+      commentContent,
+    );
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, updateComment:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
+/** DELETE: Soft Delete Comment (owner only) */
+commentController.deleteComment = async (req: AdminRequest, res: Response) => {
+  try {
+    const commentId = req.params.id;
+
+    const result = await commentService.softDeleteComment(
+      commentId,
+      String(req.member._id),
+    );
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, deleteComment:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 export default commentController;

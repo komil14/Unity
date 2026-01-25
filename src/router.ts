@@ -122,6 +122,16 @@ router.post(
   commentController.createComment,
 );
 router.get("/comment/all", commentController.getComments);
+router.patch(
+  "/comment/:id",
+  memberController.verifyAuth,
+  commentController.updateComment,
+);
+router.delete(
+  "/comment/:id",
+  memberController.verifyAuth,
+  commentController.deleteComment,
+);
 
 /** LIKE ROUTES */
 router.post(

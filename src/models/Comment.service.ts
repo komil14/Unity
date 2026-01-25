@@ -1,7 +1,12 @@
 import CommentModel from "../schemas/Comment.schema";
 import BoardModel from "../schemas/Board.schema";
 import EventModel from "../schemas/Event.schema";
-import { CommentInput, CommentInquiry, Comment } from "../libs/types/comment";
+import {
+  CommentInput,
+  CommentInquiry,
+  Comment,
+  CommentListResponse,
+} from "../libs/types/comment";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { CommentStatus } from "../libs/enums/comment.enum";
 
@@ -34,29 +39,41 @@ class CommentService {
     }
   }
 
-  public async getComments(inquiry: CommentInquiry): Promise<Comment[]> {
+  public async getComments(
+    inquiry: CommentInquiry,
+  ): Promise<CommentListResponse> {
     const match = {
       articleId: inquiry.articleId,
       commentStatus: CommentStatus.ACTIVE,
     };
-    const result = await this.commentModel
-      .aggregate([
-        { $match: match },
-        { $sort: { createdAt: -1 } },
-        { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
-        { $limit: inquiry.limit * 1 },
-        {
-          $lookup: {
-            from: "members",
-            localField: "memberId",
-            foreignField: "_id",
-            as: "memberData",
+    const [result, total] = await Promise.all([
+      this.commentModel
+        .aggregate([
+          { $match: match },
+          { $sort: { createdAt: -1 } },
+          { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
+          { $limit: inquiry.limit * 1 },
+          {
+            $lookup: {
+              from: "members",
+              localField: "memberId",
+              foreignField: "_id",
+              as: "memberData",
+            },
           },
-        },
-        { $unwind: "$memberData" },
-      ])
-      .exec();
-    return result as unknown as Comment[];
+          { $unwind: "$memberData" },
+        ])
+        .exec(),
+      this.commentModel.countDocuments(match).exec(),
+    ]);
+
+    return {
+      data: result as unknown as Comment[],
+      total,
+      page: inquiry.page,
+      limit: inquiry.limit,
+      hasMore: inquiry.page * inquiry.limit < total,
+    };
   }
 
   public async getAllCommentsAdmin(): Promise<Comment[]> {
@@ -89,6 +106,39 @@ class CommentService {
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     return result.toJSON() as unknown as any;
+  }
+
+  public async updateCommentContent(
+    commentId: string,
+    memberId: string,
+    commentContent: string,
+  ): Promise<Comment> {
+    const updated = await this.commentModel
+      .findOneAndUpdate(
+        { _id: commentId, memberId, commentStatus: CommentStatus.ACTIVE },
+        { commentContent },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return updated.toJSON() as unknown as Comment;
+  }
+
+  public async softDeleteComment(
+    commentId: string,
+    memberId: string,
+  ): Promise<Comment> {
+    const deleted = await this.commentModel
+      .findOneAndUpdate(
+        { _id: commentId, memberId, commentStatus: CommentStatus.ACTIVE },
+        { commentStatus: CommentStatus.DELETE },
+        { new: true },
+      )
+      .exec();
+
+    if (!deleted) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return deleted.toJSON() as unknown as Comment;
   }
 }
 

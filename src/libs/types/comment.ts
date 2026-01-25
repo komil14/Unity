@@ -30,3 +30,12 @@ export interface CommentInquiry {
   articleId: Types.ObjectId;
   targetType?: "article" | "event"; // Support both article and event comments
 }
+
+// 4. Paginated Response DTO
+export interface CommentListResponse {
+  data: Comment[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
