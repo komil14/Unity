@@ -59,7 +59,7 @@ class EventService {
 
   public async getEvent(
     memberId: Types.ObjectId | null,
-    id: string
+    id: string,
   ): Promise<Event> {
     const event = await this.eventModel.findById(id).exec();
 
@@ -124,7 +124,13 @@ class EventService {
     return eventData;
   }
 
-  public async getEvents(inquiry: EventInquiry): Promise<Event[]> {
+  public async getEvents(inquiry: EventInquiry): Promise<{
+    items: Event[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const match: T = { eventStatus: EventStatus.ACTIVE };
     if (inquiry.search)
       match.eventTitle = { $regex: new RegExp(inquiry.search, "i") };
@@ -139,23 +145,26 @@ class EventService {
     const dir = inquiry.direction === "asc" ? 1 : -1;
     const sort: T = { [inquiry.order || "createdAt"]: dir };
 
-    const result = await this.eventModel
-      .aggregate([
-        { $match: match },
-        { $sort: sort },
-        { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
-        { $limit: inquiry.limit * 1 },
-        {
-          $lookup: {
-            from: "members",
-            localField: "memberId",
-            foreignField: "_id",
-            as: "memberData",
+    const [result, total] = await Promise.all([
+      this.eventModel
+        .aggregate([
+          { $match: match },
+          { $sort: sort },
+          { $skip: (inquiry.page * 1 - 1) * inquiry.limit },
+          { $limit: inquiry.limit * 1 },
+          {
+            $lookup: {
+              from: "members",
+              localField: "memberId",
+              foreignField: "_id",
+              as: "memberData",
+            },
           },
-        },
-        { $unwind: "$memberData" },
-      ])
-      .exec();
+          { $unwind: "$memberData" },
+        ])
+        .exec(),
+      this.eventModel.countDocuments(match),
+    ]);
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
@@ -167,7 +176,15 @@ class EventService {
       return event;
     });
 
-    return sanitizedResult as unknown as Event[];
+    const totalPages = Math.max(1, Math.ceil(total / inquiry.limit));
+
+    return {
+      items: sanitizedResult as unknown as Event[],
+      total,
+      page: inquiry.page,
+      limit: inquiry.limit,
+      totalPages,
+    };
   }
 
   /**
@@ -311,7 +328,7 @@ class EventService {
       .findOneAndUpdate(
         { _id: eventId },
         { $set: { eventStatus: input.eventStatus } },
-        { new: true }
+        { new: true },
       )
       .exec();
 
