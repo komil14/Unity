@@ -99,6 +99,11 @@ router.get(
   memberController.verifyAuth,
   applicationController.getMyApplications,
 );
+router.get(
+  "/event/:id/attendees",
+  memberController.retrieveAuth,
+  applicationController.getEventAttendees,
+);
 
 /** BOARD ROUTES */
 router.post(

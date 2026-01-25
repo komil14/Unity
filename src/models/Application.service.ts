@@ -78,6 +78,53 @@ class ApplicationService {
 
     return results;
   }
+
+  /**
+   * Get attendees for an event (approved applications)
+   */
+  public async getEventAttendees(eventId: string, limit = 12): Promise<any[]> {
+    const eventObjectId = new Types.ObjectId(eventId);
+
+    const attendees = await this.applicationModel
+      .aggregate([
+        {
+          $match: {
+            eventId: eventObjectId,
+            applicationStatus: ApplicationStatus.APPROVED,
+          },
+        },
+        { $sort: { createdAt: 1 } },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        { $unwind: "$memberData" },
+        {
+          $project: {
+            _id: 1,
+            applicationStatus: 1,
+            memberId: 1,
+            eventId: 1,
+            createdAt: 1,
+            memberData: {
+              _id: "$memberData._id",
+              memberNick: "$memberData.memberNick",
+              memberImage: "$memberData.memberImage",
+              memberType: "$memberData.memberType",
+              isVerified: "$memberData.isVerified",
+            },
+          },
+        },
+      ])
+      .exec();
+
+    return attendees;
+  }
 }
 
 export default ApplicationService;
