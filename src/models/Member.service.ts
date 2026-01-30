@@ -53,10 +53,10 @@ class MemberService {
 
     try {
       const result = await this.memberModel.create(input);
-      const resultJson = result.toJSON();
+      const resultJson : Member = result.toJSON();
       delete (resultJson as any).memberPassword;
 
-      return resultJson as unknown as Member;
+      return resultJson
     } catch (err) {
       console.log("Error, model:signup", err);
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
@@ -87,9 +87,9 @@ class MemberService {
     if (!fullMember)
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    const resultJson = fullMember.toJSON();
+    const resultJson : Member = fullMember.toJSON();
     delete (resultJson as any).memberPassword;
-    return resultJson as unknown as Member;
+    return resultJson;
   }
 
   /* BSSR: Admin Signup */
@@ -107,10 +107,10 @@ class MemberService {
     try {
       const result = await this.memberModel.create(input);
 
-      const resultJson = result.toJSON();
+      const resultJson : Member = result.toJSON();
       delete (resultJson as any).memberPassword;
 
-      return resultJson as unknown as Member;
+      return resultJson;
     } catch (err) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
     }
@@ -140,7 +140,7 @@ class MemberService {
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    return result.toJSON() as unknown as Member;
+    return result.toJSON() as Member;
   }
 
   /** BSSR: Get All Users (Table) */
@@ -153,7 +153,7 @@ class MemberService {
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     }
 
-    return result as unknown as Member[];
+    return result as Member[];
   }
   /** BSSR: Update Status (ROBUST FIX) */
   public async updateMember(input: MemberInput): Promise<Member> {
@@ -183,7 +183,7 @@ class MemberService {
 
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    return result.toJSON() as unknown as Member;
+    return result.toJSON() as Member;
   }
 
   /** SPA: Update own profile */
@@ -254,7 +254,7 @@ class MemberService {
     const json = result.toJSON();
     delete (json as any).memberPassword;
 
-    return json as unknown as Member;
+    return json as Member;
   }
 
   /** BSSR: Get Stats */
