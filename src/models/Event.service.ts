@@ -47,7 +47,9 @@ class EventService {
       .exec();
 
     if (exist) throw new Errors(HttpCode.CONFLICT, Message.CREATE_FAILED);
-
+    if (input.memberStatus !== MemberStatus.ACTIVE) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_VERIFIED);
+    }
     try {
       const result = await this.eventModel.create(input);
       return result.toJSON() as unknown as Event;

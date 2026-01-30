@@ -44,11 +44,10 @@ memberController.signup = async (req: Request, res: Response) => {
     });
 
     res.status(201).json({ member: result, accessToken: token });
-  } catch (err: any) {
-    console.log("Error, signup:", err);
-    if (err instanceof Errors)
-      res.status(err.code).json({ message: err.message });
-    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  } catch (err) {
+    console.log("Error: signup", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
 

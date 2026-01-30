@@ -53,13 +53,13 @@ class MemberService {
 
     try {
       const result = await this.memberModel.create(input);
-      const resultJson : Member = result.toJSON();
+      const resultJson: Member = result.toJSON();
       delete (resultJson as any).memberPassword;
 
-      return resultJson
+      return resultJson;
     } catch (err) {
       console.log("Error, model:signup", err);
-      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+      throw new Errors(HttpCode.BAD_REQUEST, Message.USED_MEMBER_NICK);
     }
   }
 
@@ -70,24 +70,33 @@ class MemberService {
     const member = await this.memberModel
       .findOne(
         { memberNick: input.memberNick },
-        { memberNick: 1, memberPassword: 1, memberStatus: 1 }
+        { memberNick: 1, memberPassword: 1, memberStatus: 1 },
       )
       .exec();
 
+    if (MemberStatus.BLOCK === member?.memberStatus) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.USER_BLOCKED);
+    }
+    if (MemberStatus.PENDING === member?.memberStatus) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_VERIFIED);
+    }
+    if (MemberStatus.DELETE === member?.memberStatus) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.USER_DELETED);
+    }
     if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
     const isMatch = await bcrypt.compare(
       input.memberPassword,
-      member.memberPassword
+      member.memberPassword,
     );
     if (!isMatch)
-      throw new Errors(HttpCode.UNAUTHORIZED, Message.WRONG_PASSWORD);
+      throw new Errors(HttpCode.UNAUTHORIZED, Message.WRONG_NICK_PASSWORD);
 
     const fullMember = await this.memberModel.findById(member._id).exec();
     if (!fullMember)
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    const resultJson : Member = fullMember.toJSON();
+    const resultJson: Member = fullMember.toJSON();
     delete (resultJson as any).memberPassword;
     return resultJson;
   }
@@ -98,7 +107,7 @@ class MemberService {
       .findOne({ memberType: MemberType.ADMIN })
       .exec();
 
-    if (exist) throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    if (exist) throw new Errors(HttpCode.BAD_REQUEST, Message.ADMIN_EXISTS);
 
     const salt: string = await bcrypt.genSalt();
     input.memberPassword = await bcrypt.hash(input.memberPassword, salt);
@@ -107,12 +116,12 @@ class MemberService {
     try {
       const result = await this.memberModel.create(input);
 
-      const resultJson : Member = result.toJSON();
+      const resultJson: Member = result.toJSON();
       delete (resultJson as any).memberPassword;
 
       return resultJson;
     } catch (err) {
-      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+      throw new Errors(HttpCode.BAD_REQUEST, Message.USED_MEMBER_NICK);
     }
   }
 
@@ -121,7 +130,7 @@ class MemberService {
     const member = await this.memberModel
       .findOne(
         { memberNick: input.memberNick },
-        { memberNick: 1, memberPassword: 1, memberType: 1, memberStatus: 1 }
+        { memberNick: 1, memberPassword: 1, memberType: 1, memberStatus: 1 },
       )
       .exec();
 
@@ -129,11 +138,11 @@ class MemberService {
 
     const isMatch = await bcrypt.compare(
       input.memberPassword,
-      member.memberPassword
+      member.memberPassword,
     );
 
     if (!isMatch) {
-      throw new Errors(HttpCode.UNAUTHORIZED, Message.WRONG_PASSWORD);
+      throw new Errors(HttpCode.UNAUTHORIZED, Message.WRONG_NICK_PASSWORD);
     }
 
     const result = await this.memberModel.findById(member._id).exec();
@@ -189,7 +198,7 @@ class MemberService {
   /** SPA: Update own profile */
   public async updateProfile(
     memberId: Types.ObjectId,
-    input: MemberUpdateInput
+    input: MemberUpdateInput,
   ): Promise<Member> {
     const payload: any = {};
     const allowedFields: Array<keyof MemberUpdateInput> = [
@@ -233,7 +242,7 @@ class MemberService {
         "Checking duplicate phone:",
         payload.memberPhone,
         "for memberId:",
-        memberId
+        memberId,
       );
       const duplicatePhone = await this.memberModel
         .findOne({ memberPhone: payload.memberPhone, _id: { $ne: memberId } })
@@ -342,7 +351,7 @@ class MemberService {
   /** SPA: Get Organizer detail (+ organized events/groups) */
   public async getOrganizerDetail(
     viewerId: Types.ObjectId | null,
-    organizerId: string
+    organizerId: string,
   ): Promise<any> {
     const member = await this.memberModel.findById(organizerId).exec();
     if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
@@ -376,7 +385,7 @@ class MemberService {
   /** SPA: Increment organizer views and return the updated count */
   public async viewOrganizer(
     viewerId: Types.ObjectId | null,
-    organizerId: string
+    organizerId: string,
   ): Promise<number> {
     const member = await this.memberModel.findById(organizerId).exec();
     if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
@@ -405,7 +414,7 @@ class MemberService {
       .findByIdAndUpdate(
         organizerId,
         { $inc: { memberViews: 1 } },
-        { new: true }
+        { new: true },
       )
       .select({ memberViews: 1 })
       .lean()
