@@ -58,6 +58,13 @@ router.get(
   eventController.getEvent,
 );
 
+// Change Event Status (ACTIVE -> CANCELED, etc.)
+router.patch(
+  "/event/status/:id",
+  memberController.verifyAuth,
+  eventController.changeEventStatus,
+);
+
 /** GROUP ROUTES */
 router.post(
   "/group/create",

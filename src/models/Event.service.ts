@@ -130,10 +130,19 @@ class EventService {
     limit: number;
     totalPages: number;
   }> {
-    const match: T = { eventStatus: EventStatus.ACTIVE };
+    const match: T = {};
+
+    // If fetching organizer's own events, include ACTIVE and CANCELED
+    // If fetching public feed, only show ACTIVE
+    if (inquiry.memberId) {
+      match.memberId = inquiry.memberId;
+      match.eventStatus = { $in: [EventStatus.ACTIVE, EventStatus.CANCELED] };
+    } else {
+      match.eventStatus = EventStatus.ACTIVE;
+    }
+
     if (inquiry.search)
       match.eventTitle = { $regex: new RegExp(inquiry.search, "i") };
-    if (inquiry.memberId) match.memberId = inquiry.memberId;
 
     if (inquiry.startDate || inquiry.endDate) {
       match.eventDate = {};
@@ -322,19 +331,7 @@ class EventService {
 
   /** BSSR: Update Event Status (ROBUST FIX) */
   public async updateEventStatus(input: any): Promise<any> {
-    const eventId = new Types.ObjectId(input._id as string);
-    const memberId = input.memberId ? new Types.ObjectId(input.memberId) : null;
-
-    // Verify ownership if memberId provided
-    if (memberId) {
-      const event = await this.eventModel.findById(eventId).exec();
-      if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-      
-      if (event.memberId.toString() !== memberId.toString()) {
-        throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
-      }
-    }
-
+    const eventId = new Types.ObjectId(input._id as string); // Explicit Cast
     const result = await this.eventModel
       .findOneAndUpdate(
         { _id: eventId },
