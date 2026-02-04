@@ -49,6 +49,12 @@ router.post(
   makeUploader("events").array("eventImages", 5),
   eventController.createEvent,
 );
+router.post(
+  "/event/update/:id",
+  memberController.verifyAuth,
+  makeUploader("events").array("eventImages", 5),
+  eventController.updateEvent,
+);
 router.get("/event/all", eventController.getEvents);
 router.get("/event/popular-weekly", eventController.getWeeklyPopularEvents);
 // New Detail Route with View Counting

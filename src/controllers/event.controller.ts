@@ -44,6 +44,30 @@ eventController.createEvent = async (req: AdminRequest, res: Response) => {
   }
 };
 
+/** PATCH: Update Event */
+eventController.updateEvent = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const input: Partial<EventInput> = req.body;
+
+    // Handle new images if uploaded
+    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+      const filenames = (req.files as Express.Multer.File[]).map(
+        (file) => file.filename || path.basename(file.path || ""),
+      );
+      input.eventImages = filenames;
+    }
+
+    const result = await eventService.updateEvent(req.member, id, input);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, updateEvent:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 /** GET: All Events (Feed) */
 eventController.getEvents = async (req: Request, res: Response) => {
   try {

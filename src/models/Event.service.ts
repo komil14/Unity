@@ -56,6 +56,54 @@ class EventService {
     }
   }
 
+  public async updateEvent(
+    member: { _id: Types.ObjectId; memberType: MemberType },
+    id: string,
+    input: Partial<EventInput>,
+  ): Promise<Event> {
+    if (member.memberType !== MemberType.ORG) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    // Verify organizer owns this event
+    const event = await this.eventModel.findById(id).exec();
+    if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (event.memberId.toString() !== member._id.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    // Prevent updating status via this endpoint (use changeEventStatus instead)
+    if (input.eventStatus) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
+    }
+
+    try {
+      const updateData: T = {};
+      if (input.eventTitle) updateData.eventTitle = input.eventTitle;
+      if (input.eventDesc) updateData.eventDesc = input.eventDesc;
+      if (input.eventLocation) updateData.eventLocation = input.eventLocation;
+      if (input.eventDate) updateData.eventDate = input.eventDate;
+      if (input.eventCapacity !== undefined)
+        updateData.eventCapacity = input.eventCapacity;
+      if (input.eventPoints !== undefined)
+        updateData.eventPoints = input.eventPoints;
+      if (input.eventImages && input.eventImages.length > 0) {
+        updateData.eventImages = this.sanitizeImagePaths(input.eventImages);
+      }
+
+      const result = await this.eventModel
+        .findByIdAndUpdate(id, { $set: updateData }, { new: true })
+        .exec();
+
+      if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+      return result.toJSON() as unknown as Event;
+    } catch (err: any) {
+      console.log("Error, model:updateEvent", err);
+      if (err instanceof Errors) throw err;
+      throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
+    }
+  }
+
   public async getEvent(
     memberId: Types.ObjectId | null,
     id: string,
