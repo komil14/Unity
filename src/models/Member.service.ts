@@ -41,6 +41,13 @@ class MemberService {
    * SPA: Signup (For Users and Organizations)
    */
   public async signup(input: MemberInput): Promise<Member> {
+    if (
+      input.memberType !== MemberType.USER &&
+      input.memberType !== MemberType.ORG
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+
     const salt = await bcrypt.genSalt();
     input.memberPassword = await bcrypt.hash(input.memberPassword, salt);
 

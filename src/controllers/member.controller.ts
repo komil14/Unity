@@ -24,14 +24,6 @@ memberController.signup = async (req: Request, res: Response) => {
     console.log("Signup Body:", req.body);
     const input: MemberInput = req.body;
 
-    // Validation: Only USER or ORG allowed via API
-    if (
-      input.memberType !== MemberType.USER &&
-      input.memberType !== MemberType.ORG
-    ) {
-      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
-    }
-
     const result = await memberService.signup(input);
 
     // Generate Token
@@ -94,7 +86,7 @@ memberController.logout = async (req: Request, res: Response) => {
 memberController.verifyAuth = async (
   req: AdminRequest,
   res: Response,
-  next: Function
+  next: Function,
 ) => {
   try {
     const token = req.cookies["accessToken"];
@@ -124,7 +116,7 @@ memberController.verifyAuth = async (
 memberController.retrieveAuth = async (
   req: AdminRequest,
   res: Response,
-  next: Function
+  next: Function,
 ) => {
   try {
     const token = req.cookies["accessToken"];

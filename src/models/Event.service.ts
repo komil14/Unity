@@ -344,6 +344,48 @@ class EventService {
     return result.toJSON() as unknown as any;
   }
 
+  public async changeEventStatus(
+    member: { _id: Types.ObjectId; memberType: MemberType },
+    id: string,
+    eventStatus: string,
+  ): Promise<any> {
+    if (member.memberType !== MemberType.ORG) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    if (!eventStatus) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
+    }
+
+    const validStatuses = ["ACTIVE", "CANCELED"];
+    if (!validStatuses.includes(eventStatus)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
+    }
+
+    const event = await this.getEvent(null, id);
+    if (event.memberId.toString() !== member._id.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    return this.updateEventStatus({ _id: id, eventStatus });
+  }
+
+  public async deleteEvent(
+    member: { _id: Types.ObjectId; memberType: MemberType },
+    id: string,
+  ): Promise<any> {
+    if (member.memberType !== MemberType.ORG) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    const event = await this.getEvent(null, id);
+    if (event.memberId.toString() !== member._id.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    return this.updateEventStatus({ _id: id, eventStatus: EventStatus.DELETE });
+  }
+
   /** BSSR: Count Events & New Logic */
   public async getEventStats(): Promise<any> {
     const total = await this.eventModel.countDocuments();

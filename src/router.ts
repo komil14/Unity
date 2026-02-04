@@ -65,6 +65,13 @@ router.patch(
   eventController.changeEventStatus,
 );
 
+// Delete Event
+router.delete(
+  "/event/delete/:id",
+  memberController.verifyAuth,
+  eventController.deleteEvent,
+);
+
 /** GROUP ROUTES */
 router.post(
   "/group/create",

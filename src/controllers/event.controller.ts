@@ -142,38 +142,36 @@ eventController.changeEventStatus = async (
   res: Response,
 ) => {
   try {
-    // Security: Only Organizations can change their own event status
-    if (req.member.memberType !== MemberType.ORG) {
-      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
-    }
-
     const { id } = req.params;
     const { eventStatus } = req.body;
 
-    if (!eventStatus) {
-      throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
-    }
-
-    // Only allow changing to ACTIVE or CANCELED (not DELETE or COMPLETED)
-    const validStatuses = ["ACTIVE", "CANCELED"];
-    if (!validStatuses.includes(eventStatus)) {
-      throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
-    }
-
-    // Verify organizer owns this event
-    const event = await eventService.getEvent(null, id);
-    if (event.memberId.toString() !== req.member._id.toString()) {
-      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
-    }
-
-    const result = await eventService.updateEventStatus({
-      _id: id,
+    const result = await eventService.changeEventStatus(
+      req.member,
+      id,
       eventStatus,
-    });
+    );
 
     res.status(200).json(result);
   } catch (err: any) {
     console.log("Error, changeEventStatus:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
+/** DELETE: Remove Event */
+eventController.deleteEvent = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const result = await eventService.deleteEvent(req.member, id);
+
+    res
+      .status(200)
+      .json({ message: "Event deleted successfully", data: result });
+  } catch (err: any) {
+    console.log("Error, deleteEvent:", err);
     if (err instanceof Errors)
       res.status(err.code).json({ message: err.message });
     else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
