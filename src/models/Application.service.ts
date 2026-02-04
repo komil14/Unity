@@ -160,7 +160,7 @@ class ApplicationService {
   }
 
   /**
-   * Get attendees for an event (approved applications)
+   * Get attendees for an event (all statuses for organizer management)
    */
   public async getEventAttendees(eventId: string, limit = 12): Promise<any[]> {
     const eventObjectId = new Types.ObjectId(eventId);
@@ -170,10 +170,9 @@ class ApplicationService {
         {
           $match: {
             eventId: eventObjectId,
-            applicationStatus: ApplicationStatus.APPROVED,
           },
         },
-        { $sort: { createdAt: 1 } },
+        { $sort: { createdAt: -1 } },
         { $limit: limit },
         {
           $lookup: {
@@ -197,6 +196,8 @@ class ApplicationService {
               memberImage: "$memberData.memberImage",
               memberType: "$memberData.memberType",
               isVerified: "$memberData.isVerified",
+              memberDesc: "$memberData.memberDesc",
+              memberStatus: "$memberData.memberStatus",
             },
           },
         },
@@ -204,6 +205,98 @@ class ApplicationService {
       .exec();
 
     return attendees;
+  }
+
+  /**
+   * Approve an application (organizer action)
+   * Validates that only the event organizer can approve
+   */
+  public async approveApplication(
+    applicationId: any,
+    organizerId: any,
+  ): Promise<any> {
+    const appObjectId =
+      typeof applicationId === "string"
+        ? new Types.ObjectId(applicationId)
+        : applicationId;
+    const orgObjectId =
+      typeof organizerId === "string"
+        ? new Types.ObjectId(organizerId)
+        : organizerId;
+
+    // Get the application and its event
+    const application = await this.applicationModel
+      .findById(appObjectId)
+      .exec();
+    if (!application)
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    // Verify organizer owns the event
+    const event = await this.eventModel.findById(application.eventId).exec();
+    if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (event.memberId.toString() !== orgObjectId.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    const updated = await this.applicationModel
+      .findByIdAndUpdate(
+        appObjectId,
+        {
+          applicationStatus: ApplicationStatus.APPROVED,
+          updatedAt: new Date(),
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return updated.toJSON();
+  }
+
+  /**
+   * Reject an application (organizer action)
+   * Validates that only the event organizer can reject
+   */
+  public async rejectApplication(
+    applicationId: any,
+    organizerId: any,
+  ): Promise<any> {
+    const appObjectId =
+      typeof applicationId === "string"
+        ? new Types.ObjectId(applicationId)
+        : applicationId;
+    const orgObjectId =
+      typeof organizerId === "string"
+        ? new Types.ObjectId(organizerId)
+        : organizerId;
+
+    // Get the application and its event
+    const application = await this.applicationModel
+      .findById(appObjectId)
+      .exec();
+    if (!application)
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    // Verify organizer owns the event
+    const event = await this.eventModel.findById(application.eventId).exec();
+    if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (event.memberId.toString() !== orgObjectId.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    const updated = await this.applicationModel
+      .findByIdAndUpdate(
+        appObjectId,
+        {
+          applicationStatus: ApplicationStatus.REJECTED,
+          updatedAt: new Date(),
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return updated.toJSON();
   }
 }
 

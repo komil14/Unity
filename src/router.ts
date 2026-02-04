@@ -129,6 +129,16 @@ router.post(
   memberController.verifyAuth,
   applicationController.cancelApplication,
 );
+router.post(
+  "/application/approve/:applicationId",
+  memberController.verifyAuth,
+  applicationController.approveApplication,
+);
+router.post(
+  "/application/reject/:applicationId",
+  memberController.verifyAuth,
+  applicationController.rejectApplication,
+);
 router.get(
   "/event/:id/attendees",
   memberController.retrieveAuth,
