@@ -47,9 +47,6 @@ class EventService {
       .exec();
 
     if (exist) throw new Errors(HttpCode.CONFLICT, Message.CREATE_FAILED);
-    if (input.memberStatus !== MemberStatus.ACTIVE) {
-      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_VERIFIED);
-    }
     try {
       const result = await this.eventModel.create(input);
       return result.toJSON() as unknown as Event;
@@ -325,7 +322,19 @@ class EventService {
 
   /** BSSR: Update Event Status (ROBUST FIX) */
   public async updateEventStatus(input: any): Promise<any> {
-    const eventId = new Types.ObjectId(input._id as string); // Explicit Cast
+    const eventId = new Types.ObjectId(input._id as string);
+    const memberId = input.memberId ? new Types.ObjectId(input.memberId) : null;
+
+    // Verify ownership if memberId provided
+    if (memberId) {
+      const event = await this.eventModel.findById(eventId).exec();
+      if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+      
+      if (event.memberId.toString() !== memberId.toString()) {
+        throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+      }
+    }
+
     const result = await this.eventModel
       .findOneAndUpdate(
         { _id: eventId },
