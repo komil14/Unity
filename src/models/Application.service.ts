@@ -298,6 +298,54 @@ class ApplicationService {
     if (!updated) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     return updated.toJSON();
   }
+
+  /**
+   * Complete an application (organizer action)
+   * Validates that only the event organizer can complete
+   */
+  public async completeApplication(
+    applicationId: any,
+    organizerId: any,
+  ): Promise<any> {
+    const appObjectId =
+      typeof applicationId === "string"
+        ? new Types.ObjectId(applicationId)
+        : applicationId;
+    const orgObjectId =
+      typeof organizerId === "string"
+        ? new Types.ObjectId(organizerId)
+        : organizerId;
+
+    const application = await this.applicationModel
+      .findById(appObjectId)
+      .exec();
+    if (!application)
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    const event = await this.eventModel.findById(application.eventId).exec();
+    if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (event.memberId.toString() !== orgObjectId.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    if (application.applicationStatus !== ApplicationStatus.APPROVED) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.NOT_ALLOWED);
+    }
+
+    const updated = await this.applicationModel
+      .findByIdAndUpdate(
+        appObjectId,
+        {
+          applicationStatus: ApplicationStatus.COMPLETED,
+          updatedAt: new Date(),
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updated) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return updated.toJSON();
+  }
 }
 
 export default ApplicationService;
