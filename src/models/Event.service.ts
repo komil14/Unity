@@ -63,7 +63,8 @@ class EventService {
     const event = await this.eventModel.findById(id).exec();
 
     if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
-    if (event.eventStatus === EventStatus.DELETE) {
+    // Only hide deleted events from public; allow organizer to view for modification
+    if (event.eventStatus === EventStatus.DELETE && memberId === null) {
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     }
 
@@ -136,7 +137,9 @@ class EventService {
     // If fetching public feed, only show ACTIVE
     if (inquiry.memberId) {
       match.memberId = inquiry.memberId;
-      match.eventStatus = { $in: [EventStatus.ACTIVE, EventStatus.CANCELED] };
+      match.eventStatus = {
+        $in: [EventStatus.ACTIVE, EventStatus.CANCELED, EventStatus.DELETE],
+      };
     } else {
       match.eventStatus = EventStatus.ACTIVE;
     }
@@ -362,7 +365,7 @@ class EventService {
       throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
     }
 
-    const event = await this.getEvent(null, id);
+    const event = await this.getEvent(member._id, id);
     if (event.memberId.toString() !== member._id.toString()) {
       throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
     }
@@ -378,7 +381,7 @@ class EventService {
       throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
     }
 
-    const event = await this.getEvent(null, id);
+    const event = await this.getEvent(member._id, id);
     if (event.memberId.toString() !== member._id.toString()) {
       throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
     }
