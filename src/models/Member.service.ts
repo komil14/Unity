@@ -84,13 +84,10 @@ class MemberService {
     if (MemberStatus.BLOCK === member?.memberStatus) {
       throw new Errors(HttpCode.FORBIDDEN, Message.USER_BLOCKED);
     }
-    if (MemberStatus.PENDING === member?.memberStatus) {
-      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_VERIFIED);
-    }
     if (MemberStatus.DELETE === member?.memberStatus) {
       throw new Errors(HttpCode.FORBIDDEN, Message.USER_DELETED);
     }
-    if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.WRONG_NICK_PASSWORD);
 
     const isMatch = await bcrypt.compare(
       input.memberPassword,
