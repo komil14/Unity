@@ -164,6 +164,17 @@ router.get(
   memberController.retrieveAuth,
   boardController.getBoard,
 );
+router.patch(
+  "/board/update/:id",
+  memberController.verifyAuth,
+  makeUploader("community").single("boardImage"),
+  boardController.updateBoard,
+);
+router.delete(
+  "/board/delete/:id",
+  memberController.verifyAuth,
+  boardController.deleteBoard,
+);
 
 /** COMMENT ROUTES */
 router.post(

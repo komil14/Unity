@@ -29,7 +29,7 @@ class BoardService {
 
   public async getBoard(
     memberId: Types.ObjectId | null,
-    id: string
+    id: string,
   ): Promise<Board> {
     const board = await this.boardModel.findById(id).exec();
 
@@ -121,7 +121,7 @@ class BoardService {
       .findByIdAndUpdate(
         boardId,
         { $set: { boardStatus: input.boardStatus } },
-        { new: true }
+        { new: true },
       )
       .exec();
 
@@ -136,14 +136,70 @@ class BoardService {
   /** BSSR: Get Board Stats */
   public async getBoardStats(): Promise<any> {
     const total = await this.boardModel.countDocuments();
-    
+
     // Count Articles created in last 24h
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const newBoards = await this.boardModel.countDocuments({ createdAt: { $gte: last24h } });
+    const newBoards = await this.boardModel.countDocuments({
+      createdAt: { $gte: last24h },
+    });
 
     return { total, newBoards };
   }
-  
+
+  /** Update Board (User-facing) */
+  public async updateBoard(
+    memberId: Types.ObjectId,
+    boardId: string,
+    input: Partial<BoardInput>,
+  ): Promise<Board> {
+    const board = await this.boardModel.findById(boardId).exec();
+
+    if (!board) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (board.boardStatus === BoardStatus.DELETE) {
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    }
+
+    // Check ownership
+    if (board.memberId.toString() !== memberId.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    const result = await this.boardModel
+      .findByIdAndUpdate(boardId, { $set: input }, { new: true })
+      .exec();
+
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
+    return result.toJSON() as unknown as Board;
+  }
+
+  /** Delete Board (Soft Delete - User-facing) */
+  public async deleteBoard(
+    memberId: Types.ObjectId,
+    boardId: string,
+  ): Promise<Board> {
+    const board = await this.boardModel.findById(boardId).exec();
+
+    if (!board) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (board.boardStatus === BoardStatus.DELETE) {
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    }
+
+    // Check ownership
+    if (board.memberId.toString() !== memberId.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    const result = await this.boardModel
+      .findByIdAndUpdate(
+        boardId,
+        { $set: { boardStatus: BoardStatus.DELETE } },
+        { new: true },
+      )
+      .exec();
+
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
+    return result.toJSON() as unknown as Board;
+  }
 }
 
 export default BoardService;

@@ -83,4 +83,45 @@ boardController.getBoard = async (req: AdminRequest, res: Response) => {
   }
 };
 
+/** PATCH /board/update/:id */
+boardController.updateBoard = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const input: Partial<BoardInput> = req.body;
+
+    // Handle Image - store only filename
+    if (req.file) {
+      const filename =
+        (req.file as any).filename ||
+        path.basename((req.file as any).path || "");
+      input.boardImage = filename;
+    }
+
+    const result = await boardService.updateBoard(req.member._id, id, input);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.log("Error, updateBoard:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
+/** DELETE /board/delete/:id */
+boardController.deleteBoard = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const result = await boardService.deleteBoard(req.member._id, id);
+    res
+      .status(200)
+      .json({ message: "Article deleted successfully", data: result });
+  } catch (err: any) {
+    console.log("Error, deleteBoard:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 export default boardController;
