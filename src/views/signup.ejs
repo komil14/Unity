@@ -1,40 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/img/unity-logo.svg" type="image/svg+xml" />
     <title>Unity | Admin Signup</title>
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/css/main.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
     <div class="auth-wrapper">
-        <div class="auth-card">
-            <div class="auth-logo">
-                <i class="fa-solid fa-leaf"></i>
-            </div>
-            <div class="auth-h">Create Admin</div>
-            <p class="auth-p">Register a new super-user account</p>
-            
-            <form action="/admin/signup" method="POST">
-                <div class="input-group">
-                    <label>Username</label>
-                    <input type="text" name="memberNick" class="modern-input" required>
-                </div>
-                <div class="input-group">
-                    <label>Phone Contact</label>
-                    <input type="text" name="memberPhone" class="modern-input" required>
-                </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" name="memberPassword" class="modern-input" required>
-                </div>
-                <button type="submit" class="btn-glow">Create Account</button>
-            </form>
-            
-            <div class="auth-footer">
-                Already have an account? <a href="/admin/login">Login</a>
-            </div>
+      <div class="auth-card">
+        <div class="auth-logo">
+          <i class="fa-solid fa-leaf"></i>
         </div>
+        <div class="auth-h">Create Admin</div>
+        <p class="auth-p">Register a new super-user account</p>
+
+        <form action="/admin/signup" method="POST">
+          <div class="input-group">
+            <label>Username</label>
+            <input
+              type="text"
+              name="memberNick"
+              class="modern-input"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label>Phone Contact</label>
+            <input
+              type="text"
+              name="memberPhone"
+              class="modern-input"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input
+              type="password"
+              name="memberPassword"
+              class="modern-input"
+              required
+            />
+          </div>
+          <button type="submit" class="btn-glow">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+          Already have an account? <a href="/admin/login">Login</a>
+        </div>
+      </div>
     </div>
-</body>
+  </body>
 </html>
