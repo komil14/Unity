@@ -20,6 +20,8 @@ import { GroupStatus } from "../libs/enums/group.enum";
 import { BoardStatus } from "../libs/enums/board.enum";
 import { CommentStatus } from "../libs/enums/comment.enum";
 
+import { escapeRegExp } from "../libs/utils/helpers";
+
 class MemberService {
   private readonly memberModel;
   private readonly eventModel;
@@ -87,7 +89,8 @@ class MemberService {
     if (MemberStatus.DELETE === member?.memberStatus) {
       throw new Errors(HttpCode.FORBIDDEN, Message.USER_DELETED);
     }
-    if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.WRONG_NICK_PASSWORD);
+    if (!member)
+      throw new Errors(HttpCode.NOT_FOUND, Message.WRONG_NICK_PASSWORD);
 
     const isMatch = await bcrypt.compare(
       input.memberPassword,
@@ -139,6 +142,11 @@ class MemberService {
       .exec();
 
     if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    // SECURITY: Only allow ADMIN members to log in via admin panel
+    if (member.memberType !== MemberType.ADMIN) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
 
     const isMatch = await bcrypt.compare(
       input.memberPassword,
@@ -305,7 +313,9 @@ class MemberService {
     const match: any = { memberType: MemberType.ORG };
     if (inquiry.onlyActive) match.memberStatus = MemberStatus.ACTIVE;
     if (inquiry.search)
-      match.memberNick = { $regex: new RegExp(inquiry.search, "i") };
+      match.memberNick = {
+        $regex: new RegExp(escapeRegExp(inquiry.search), "i"),
+      };
 
     const dir = inquiry.direction === "asc" ? 1 : -1;
     const sort: any = { [inquiry.order || "createdAt"]: dir };

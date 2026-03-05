@@ -16,6 +16,8 @@ import {
 } from "../libs/types/group";
 import { GroupMemberRole, GroupStatus } from "../libs/enums/group.enum";
 
+import { escapeRegExp } from "../libs/utils/helpers";
+
 class GroupService {
   private readonly groupModel;
   private readonly groupMemberModel;
@@ -81,7 +83,7 @@ class GroupService {
 
   public async updateGroup(
     memberId: Types.ObjectId,
-    input: GroupUpdateInput
+    input: GroupUpdateInput,
   ): Promise<Group> {
     const group = await this.groupModel.findById(input._id).exec();
     if (!group) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
@@ -109,7 +111,9 @@ class GroupService {
   public async getGroups(inquiry: GroupInquiry): Promise<any[]> {
     const match: any = { groupStatus: GroupStatus.ACTIVE };
     if (inquiry.search)
-      match.groupName = { $regex: new RegExp(inquiry.search, "i") };
+      match.groupName = {
+        $regex: new RegExp(escapeRegExp(inquiry.search), "i"),
+      };
     if (inquiry.memberId) match.memberId = inquiry.memberId;
 
     const sort: any = { [inquiry.order || "createdAt"]: -1 };
@@ -137,7 +141,7 @@ class GroupService {
 
   public async getGroup(
     memberId: Types.ObjectId | null,
-    id: string
+    id: string,
   ): Promise<any> {
     const group = await this.groupModel.findById(id).exec();
     if (!group) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
@@ -186,7 +190,7 @@ class GroupService {
 
   public async joinGroup(
     memberId: Types.ObjectId,
-    groupId: string
+    groupId: string,
   ): Promise<any> {
     const group = await this.groupModel.findById(groupId).exec();
     if (!group) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);

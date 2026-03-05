@@ -2,6 +2,16 @@ import path from "path";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/gif",
+];
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 /**
  * Configure Multer Storage
  * @param folderName - The subfolder inside 'uploads' (e.g., 'events', 'members')
@@ -13,7 +23,7 @@ function getTargetImageStorage(folderName: string) {
       const uploadPath = path.join(
         __dirname,
         "../../../../uploads",
-        folderName
+        folderName,
       );
       cb(null, uploadPath);
     },
@@ -27,12 +37,37 @@ function getTargetImageStorage(folderName: string) {
 }
 
 /**
+ * File filter to only accept images
+ */
+function imageFileFilter(
+  _req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) {
+  if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        `Invalid file type: ${file.mimetype}. Only images are allowed.`,
+      ),
+    );
+  }
+}
+
+/**
  * Factory function to create a configured uploader middleware
  * Usage: makeUploader("events").single("eventImage")
  */
 const makeUploader = (address: string) => {
   const storage = getTargetImageStorage(address);
-  return multer({ storage: storage });
+  return multer({
+    storage: storage,
+    fileFilter: imageFileFilter,
+    limits: {
+      fileSize: MAX_FILE_SIZE,
+    },
+  });
 };
 
 export default makeUploader;

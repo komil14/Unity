@@ -69,10 +69,29 @@ class ApplicationService {
         result = await this.applicationModel.create(input);
       }
 
-      // 4. Update Event: Increment participant count (+1)
-      await this.eventModel
-        .findByIdAndUpdate(input.eventId, { $inc: { eventJoined: 1 } })
+      // 4. Atomic capacity check + increment (prevents race condition)
+      const updated = await this.eventModel
+        .findOneAndUpdate(
+          {
+            _id: input.eventId,
+            $expr: { $lt: ["$eventJoined", "$eventCapacity"] },
+          },
+          { $inc: { eventJoined: 1 } },
+          { new: true },
+        )
         .exec();
+
+      if (!updated) {
+        // Rollback the application if capacity was exceeded
+        if (result) {
+          await this.applicationModel
+            .findByIdAndUpdate(result._id, {
+              applicationStatus: ApplicationStatus.CANCELED,
+            })
+            .exec();
+        }
+        throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+      }
 
       return result;
     } catch (err) {
@@ -151,9 +170,12 @@ class ApplicationService {
     if (!application)
       throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    // Decrement eventJoined count, not below zero
+    // Decrement eventJoined count (floor at 0)
     await this.eventModel
-      .findByIdAndUpdate(eventObjectId, { $inc: { eventJoined: -1 } })
+      .findOneAndUpdate(
+        { _id: eventObjectId, eventJoined: { $gt: 0 } },
+        { $inc: { eventJoined: -1 } },
+      )
       .exec();
 
     return application.toJSON();
@@ -162,15 +184,22 @@ class ApplicationService {
   /**
    * Get attendees for an event (all statuses for organizer management)
    */
-  public async getEventAttendees(eventId: string, limit = 12): Promise<any[]> {
+  public async getEventAttendees(
+    eventId: string,
+    limit = 12,
+    statusFilter?: string[],
+  ): Promise<any[]> {
     const eventObjectId = new Types.ObjectId(eventId);
+
+    const matchStage: Record<string, any> = { eventId: eventObjectId };
+    if (statusFilter && statusFilter.length > 0) {
+      matchStage.applicationStatus = { $in: statusFilter };
+    }
 
     const attendees = await this.applicationModel
       .aggregate([
         {
-          $match: {
-            eventId: eventObjectId,
-          },
+          $match: matchStage,
         },
         { $sort: { createdAt: -1 } },
         { $limit: limit },

@@ -11,6 +11,8 @@ import { T } from "../libs/types/common";
 import { Types } from "mongoose";
 import { MemberStatus, MemberType } from "../libs/enums/member.enum";
 
+import { escapeRegExp } from "../libs/utils/helpers";
+
 class EventService {
   private readonly eventModel;
   private readonly applicationModel;
@@ -172,6 +174,70 @@ class EventService {
     return eventData;
   }
 
+  /**
+   * Record a view for an event (called separately by frontend)
+   */
+  public async viewEvent(
+    memberId: Types.ObjectId | null,
+    id: string,
+  ): Promise<number> {
+    const event = await this.eventModel.findById(id).exec();
+    if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    if (memberId) {
+      const viewInput: ViewInput = {
+        memberId: memberId,
+        viewRefId: event._id,
+        viewGroup: ViewGroup.EVENT,
+      };
+      const newView = await this.viewService.insertMemberView(viewInput);
+      if (newView) {
+        await this.eventModel
+          .findByIdAndUpdate(id, { $inc: { eventViews: 1 } })
+          .exec();
+        return event.eventViews + 1;
+      }
+    }
+    return event.eventViews;
+  }
+
+  /**
+   * Duplicate an event (create a copy with new date)
+   */
+  public async duplicateEvent(
+    member: { _id: Types.ObjectId; memberType: MemberType },
+    id: string,
+  ): Promise<Event> {
+    if (member.memberType !== MemberType.ORG) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    const event = await this.eventModel.findById(id).exec();
+    if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (event.memberId.toString() !== member._id.toString()) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_ALLOWED);
+    }
+
+    const duplicateInput: EventInput = {
+      eventTitle: `${event.eventTitle} (Copy)`,
+      eventDesc: event.eventDesc,
+      eventLocation: event.eventLocation,
+      eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week from now
+      eventCapacity: event.eventCapacity,
+      eventPoints: event.eventPoints,
+      eventImages: event.eventImages || [],
+      memberId: member._id,
+    };
+
+    try {
+      const result = await this.eventModel.create(duplicateInput);
+      return result.toJSON() as unknown as Event;
+    } catch (err) {
+      console.log("Error, model:duplicateEvent", err);
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+  }
+
   public async getEvents(inquiry: EventInquiry): Promise<{
     items: Event[];
     total: number;
@@ -193,7 +259,9 @@ class EventService {
     }
 
     if (inquiry.search)
-      match.eventTitle = { $regex: new RegExp(inquiry.search, "i") };
+      match.eventTitle = {
+        $regex: new RegExp(escapeRegExp(inquiry.search), "i"),
+      };
 
     if (inquiry.startDate || inquiry.endDate) {
       match.eventDate = {};

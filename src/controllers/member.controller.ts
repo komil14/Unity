@@ -32,7 +32,9 @@ memberController.signup = async (req: Request, res: Response) => {
     // Set Cookie
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER * 3600 * 1000,
-      httpOnly: false,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     res.status(201).json({ member: result, accessToken: token });
@@ -57,7 +59,9 @@ memberController.login = async (req: Request, res: Response) => {
     // Set Cookie
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER * 3600 * 1000,
-      httpOnly: false,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     res.status(200).json({ member: result, accessToken: token });
@@ -200,7 +204,9 @@ memberController.updateProfile = async (req: AdminRequest, res: Response) => {
     // Set the new token in cookie
     res.cookie("accessToken", newToken, {
       maxAge: AUTH_TIMER * 3600 * 1000,
-      httpOnly: false,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     res.status(200).json(updated);

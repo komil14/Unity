@@ -21,12 +21,6 @@ router.post(
   makeUploader("members").single("memberImage"),
   memberController.updateProfile,
 );
-router.post(
-  "/member/profile",
-  memberController.verifyAuth,
-  makeUploader("members").single("memberImage"),
-  memberController.updateProfile,
-);
 
 /** ORGANIZER ROUTES */
 router.get("/organizer/all", memberController.getOrganizers);
@@ -76,6 +70,20 @@ router.delete(
   "/event/delete/:id",
   memberController.verifyAuth,
   eventController.deleteEvent,
+);
+
+// View Event (increment view count)
+router.post(
+  "/event/view/:id",
+  memberController.retrieveAuth,
+  eventController.viewEvent,
+);
+
+// Duplicate Event
+router.post(
+  "/event/duplicate/:id",
+  memberController.verifyAuth,
+  eventController.duplicateEvent,
 );
 
 /** GROUP ROUTES */
@@ -163,6 +171,21 @@ router.get(
   "/board/detail/:id",
   memberController.retrieveAuth,
   boardController.getBoard,
+);
+
+// Update Board Article
+router.patch(
+  "/board/update/:id",
+  memberController.verifyAuth,
+  makeUploader("community").single("boardImage"),
+  boardController.updateBoard,
+);
+
+// Delete Board Article
+router.delete(
+  "/board/delete/:id",
+  memberController.verifyAuth,
+  boardController.deleteBoard,
 );
 
 /** COMMENT ROUTES */

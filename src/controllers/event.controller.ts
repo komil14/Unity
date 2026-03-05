@@ -202,4 +202,33 @@ eventController.deleteEvent = async (req: AdminRequest, res: Response) => {
   }
 };
 
+/** POST: View Event (increment view count) */
+eventController.viewEvent = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const memberId = req.member?._id ?? null;
+    const eventViews = await eventService.viewEvent(memberId, id);
+    res.status(200).json({ eventViews });
+  } catch (err: any) {
+    console.log("Error, viewEvent:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
+/** POST: Duplicate Event */
+eventController.duplicateEvent = async (req: AdminRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await eventService.duplicateEvent(req.member, id);
+    res.status(201).json(result);
+  } catch (err: any) {
+    console.log("Error, duplicateEvent:", err);
+    if (err instanceof Errors)
+      res.status(err.code).json({ message: err.message });
+    else res.status(500).json({ message: Message.SOMETHING_WENT_WRONG });
+  }
+};
+
 export default eventController;

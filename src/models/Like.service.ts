@@ -65,7 +65,7 @@ class LikeService {
   }
 
   public async checkLikesExistenceBatch(
-    input: LikeBatchInput
+    input: LikeBatchInput,
   ): Promise<string[]> {
     const { memberId, likeGroup, likeRefIds } = input;
     if (!memberId) return [];
@@ -97,35 +97,69 @@ class LikeService {
 
   /**
    * Helper: Selects the right Model and Field based on the Group
+   * When modifier is -1 (unlike), ensures count doesn't go below 0
    */
   private async modifyTargetLikeCount(input: LikeInput, modifier: number) {
     const { likeGroup, likeRefId } = input;
+    // For decrements, add floor guard to prevent negative counts
+    const condition = modifier < 0 ? { _id: likeRefId } : { _id: likeRefId };
+    const getUpdate = (field: string) => {
+      if (modifier < 0) {
+        // Only decrement if count > 0
+        return [
+          {
+            $set: { [field]: { $max: [0, { $add: [`$${field}`, modifier] }] } },
+          },
+        ];
+      }
+      return { $inc: { [field]: modifier } };
+    };
 
     switch (likeGroup) {
       case LikeGroup.MEMBER:
-        return await this.memberModel
-          .findByIdAndUpdate(likeRefId, { $inc: { memberLikes: modifier } })
-          .exec();
+        return modifier < 0
+          ? await this.memberModel
+              .updateOne(condition, getUpdate("memberLikes") as any)
+              .exec()
+          : await this.memberModel
+              .findByIdAndUpdate(likeRefId, getUpdate("memberLikes"))
+              .exec();
 
       case LikeGroup.EVENT:
-        return await this.eventModel
-          .findByIdAndUpdate(likeRefId, { $inc: { eventLikes: modifier } })
-          .exec();
+        return modifier < 0
+          ? await this.eventModel
+              .updateOne(condition, getUpdate("eventLikes") as any)
+              .exec()
+          : await this.eventModel
+              .findByIdAndUpdate(likeRefId, getUpdate("eventLikes"))
+              .exec();
 
       case LikeGroup.GROUP:
-        return await this.groupModel
-          .findByIdAndUpdate(likeRefId, { $inc: { groupLikes: modifier } })
-          .exec();
+        return modifier < 0
+          ? await this.groupModel
+              .updateOne(condition, getUpdate("groupLikes") as any)
+              .exec()
+          : await this.groupModel
+              .findByIdAndUpdate(likeRefId, getUpdate("groupLikes"))
+              .exec();
 
       case LikeGroup.ARTICLE:
-        return await this.boardModel
-          .findByIdAndUpdate(likeRefId, { $inc: { boardLikes: modifier } })
-          .exec();
+        return modifier < 0
+          ? await this.boardModel
+              .updateOne(condition, getUpdate("boardLikes") as any)
+              .exec()
+          : await this.boardModel
+              .findByIdAndUpdate(likeRefId, getUpdate("boardLikes"))
+              .exec();
 
       case LikeGroup.COMMENT:
-        return await this.commentModel
-          .findByIdAndUpdate(likeRefId, { $inc: { commentLikes: modifier } })
-          .exec();
+        return modifier < 0
+          ? await this.commentModel
+              .updateOne(condition, getUpdate("commentLikes") as any)
+              .exec()
+          : await this.commentModel
+              .findByIdAndUpdate(likeRefId, getUpdate("commentLikes"))
+              .exec();
     }
   }
 }

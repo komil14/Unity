@@ -1,41 +1,46 @@
-import mongoose, { Schema } from 'mongoose';
-import { CommentStatus } from '../libs/enums/comment.enum';
+import mongoose, { Schema } from "mongoose";
+import { CommentStatus } from "../libs/enums/comment.enum";
 
-const commentSchema = new Schema({
+const commentSchema = new Schema(
+  {
     commentStatus: {
-        type: String,
-        enum: CommentStatus,
-        default: CommentStatus.ACTIVE
+      type: String,
+      enum: CommentStatus,
+      default: CommentStatus.ACTIVE,
     },
 
     commentContent: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
 
     // RELATION 1: Which Article are we talking about?
     articleId: {
-        type: Schema.Types.ObjectId,
-        required: true,
-        ref: 'Board'
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: "Board",
     },
 
     // RELATION 2: Who wrote the comment?
     memberId: {
-        type: Schema.Types.ObjectId,
-        required: true,
-        ref: 'Member'
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: "Member",
     },
 
     // DENORMALIZED FIELDS
     // We store the number of likes on the comment itself for speed
     commentLikes: {
-        type: Number,
-        default: 0
-    }
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
-}, { 
-    timestamps: true, 
-});
+// Index for efficient comment lookups by article
+commentSchema.index({ articleId: 1, createdAt: -1 });
 
-export default mongoose.model('Comment', commentSchema);
+export default mongoose.model("Comment", commentSchema);

@@ -68,10 +68,14 @@ applicationController.getEventAttendees = async (
   try {
     const eventId = req.params.id;
     const limit = Number(req.query.limit) || 12;
+    const statusFilter = req.query.status
+      ? (req.query.status as string).split(",")
+      : undefined;
 
     const attendees = await applicationService.getEventAttendees(
       eventId,
       limit,
+      statusFilter,
     );
     res.status(200).json(attendees);
   } catch (err: any) {
