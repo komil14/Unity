@@ -79,7 +79,7 @@ class MemberService {
     const member = await this.memberModel
       .findOne(
         { memberNick: input.memberNick },
-        { memberNick: 1, memberPassword: 1, memberStatus: 1 },
+        { memberNick: 1, memberPassword: 1, memberStatus: 1, memberType: 1 },
       )
       .exec();
 
@@ -88,6 +88,12 @@ class MemberService {
     }
     if (MemberStatus.DELETE === member?.memberStatus) {
       throw new Errors(HttpCode.FORBIDDEN, Message.USER_DELETED);
+    }
+    if (
+      MemberStatus.PENDING === member?.memberStatus &&
+      MemberType.ORG === member?.memberType
+    ) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.NOT_VERIFIED);
     }
     if (!member)
       throw new Errors(HttpCode.NOT_FOUND, Message.WRONG_NICK_PASSWORD);

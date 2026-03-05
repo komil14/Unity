@@ -6,11 +6,7 @@ import { MemberInput, LoginInput, AdminRequest } from "../libs/types/member";
 import { MemberStatus, MemberType } from "../libs/enums/member.enum";
 import { AUTH_TIMER } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
-
-import EventService from "../models/Event.service"; // Import Service
 import adminController from "./admin.controller";
-
-const eventService = new EventService();
 
 // Instantiate Services
 const memberService = new MemberService();
@@ -21,7 +17,7 @@ const memberController: T = {};
 /** SPA: Signup */
 memberController.signup = async (req: Request, res: Response) => {
   try {
-    console.log("Signup Body:", req.body);
+    console.log("Signup request received");
     const input: MemberInput = req.body;
 
     const result = await memberService.signup(input);
@@ -48,7 +44,7 @@ memberController.signup = async (req: Request, res: Response) => {
 /** SPA: Login */
 memberController.login = async (req: Request, res: Response) => {
   try {
-    console.log("Login Body:", req.body);
+    console.log("Login request received");
     const input: LoginInput = req.body;
 
     const result = await memberService.login(input);
@@ -131,33 +127,6 @@ memberController.retrieveAuth = async (
     console.log("Error, retrieveAuth:", err);
   }
   next();
-};
-
-/** GET: Event Management Page */
-adminController.getAllEvents = async (req: Request, res: Response) => {
-  try {
-    console.log("GetAllEvents");
-    const events = await eventService.getAllEventsAdmin();
-    res.render("events", { events: events });
-  } catch (err) {
-    console.log("Error: getAllEvents", err);
-    res.redirect("/admin");
-  }
-};
-
-/** POST: Update Event Status (Delete/Recover) */
-adminController.updateEvent = async (req: Request, res: Response) => {
-  try {
-    console.log("UpdateEvent");
-    const input: any = req.body; // Use 'any' or define exact type if preferred
-    const result = await eventService.updateEventStatus(input);
-    res.json({ state: "success", data: result });
-  } catch (err) {
-    console.log("Error: updateEvent", err);
-    const message =
-      err instanceof Error ? err.message : Message.SOMETHING_WENT_WRONG;
-    res.json({ state: "fail", message: message });
-  }
 };
 
 memberController.checkAuth = async (req: AdminRequest, res: Response) => {

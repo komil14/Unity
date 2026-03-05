@@ -51,6 +51,10 @@ app.use(
 );
 app.use(cookieParser());
 
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 /** 1.5 RATE LIMITING **/
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

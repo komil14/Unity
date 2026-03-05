@@ -3,6 +3,7 @@ import EventModel from "../schemas/Event.schema";
 import { ApplicationInput } from "../libs/types/application";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { ApplicationStatus } from "../libs/enums/application.enum";
+import { EventStatus } from "../libs/enums/event.enum";
 import { T } from "../libs/types/common";
 import { Types } from "mongoose";
 
@@ -39,6 +40,9 @@ class ApplicationService {
     // 2. Check: Is Event valid and has space?
     const event = await this.eventModel.findById(input.eventId).exec();
     if (!event) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    if (event.eventStatus !== EventStatus.ACTIVE) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
 
     if (event.eventJoined >= event.eventCapacity) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED); // "Event Full"
@@ -160,7 +164,9 @@ class ApplicationService {
         {
           memberId: memberObjectId,
           eventId: eventObjectId,
-          applicationStatus: { $ne: ApplicationStatus.CANCELED },
+          applicationStatus: {
+            $in: [ApplicationStatus.PENDING, ApplicationStatus.APPROVED],
+          },
         },
         { applicationStatus: ApplicationStatus.CANCELED },
         { new: true },
@@ -323,6 +329,18 @@ class ApplicationService {
         { new: true },
       )
       .exec();
+
+    if (
+      application.applicationStatus === ApplicationStatus.PENDING ||
+      application.applicationStatus === ApplicationStatus.APPROVED
+    ) {
+      await this.eventModel
+        .findOneAndUpdate(
+          { _id: application.eventId, eventJoined: { $gt: 0 } },
+          { $inc: { eventJoined: -1 } },
+        )
+        .exec();
+    }
 
     if (!updated) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     return updated.toJSON();

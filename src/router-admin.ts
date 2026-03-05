@@ -7,57 +7,60 @@ const routerAdmin = express.Router();
 routerAdmin.get("/", adminController.goHome);
 routerAdmin.get("/login", adminController.getLogin);
 routerAdmin.post("/login", adminController.processLogin);
-routerAdmin.get("/signup", adminController.getSignup);
-routerAdmin.post("/signup", adminController.processSignup);
+if (process.env.NODE_ENV !== "production") {
+  routerAdmin.get("/signup", adminController.getSignup);
+  routerAdmin.post("/signup", adminController.processSignup);
+}
 routerAdmin.get("/logout", adminController.logout);
+routerAdmin.post("/logout", adminController.logout);
 routerAdmin.get("/check-me", adminController.checkAuthSession);
 
 // Users
 routerAdmin.get(
   "/users",
   adminController.verifyAdmin,
-  adminController.getUsers
+  adminController.getUsers,
 );
 routerAdmin.post(
   "/user/edit",
   adminController.verifyAdmin,
-  adminController.updateMember
+  adminController.updateMember,
 );
 
 // Events
 routerAdmin.get(
   "/events",
   adminController.verifyAdmin,
-  adminController.getAllEvents
+  adminController.getAllEvents,
 );
 routerAdmin.post(
   "/event/edit",
   adminController.verifyAdmin,
-  adminController.updateEvent
+  adminController.updateEvent,
 );
 
 // Boards
 routerAdmin.get(
   "/boards",
   adminController.verifyAdmin,
-  adminController.getAllBoards
+  adminController.getAllBoards,
 );
 routerAdmin.post(
   "/board/edit",
   adminController.verifyAdmin,
-  adminController.updateBoard
+  adminController.updateBoard,
 );
 
 // Comments
 routerAdmin.get(
   "/comments",
   adminController.verifyAdmin,
-  adminController.getAllComments
+  adminController.getAllComments,
 );
 routerAdmin.post(
   "/comment/edit",
   adminController.verifyAdmin,
-  adminController.updateComment
+  adminController.updateComment,
 );
 
 export default routerAdmin;
