@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 
@@ -8,6 +9,8 @@ const ALLOWED_MIME_TYPES = [
   "image/webp",
   "image/avif",
   "image/gif",
+  "image/heic",
+  "image/heif",
 ];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -25,6 +28,7 @@ function getTargetImageStorage(folderName: string) {
         "../../../../uploads",
         folderName,
       );
+      fs.mkdirSync(uploadPath, { recursive: true });
       cb(null, uploadPath);
     },
     filename: function (req, file, cb) {

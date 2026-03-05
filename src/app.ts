@@ -16,6 +16,9 @@ const MongoDBStore = ConnectMongoDB(session);
 
 const app = express();
 
+// Required behind Azure Container Apps ingress/proxy so secure cookies are persisted correctly
+app.set("trust proxy", 1);
+
 /** 0. SECURITY HEADERS **/
 app.use(
   helmet({
